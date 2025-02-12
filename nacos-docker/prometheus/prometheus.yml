@@ -31,4 +31,4 @@ scrape_configs:
   - job_name: 'nacos'
     metrics_path: '/nacos/actuator/prometheus'
     static_configs:
-      - targets: ["nacos1:8848","nacos2:8848","nacos3:8848"]
+      - targets: ['nacos:8848']

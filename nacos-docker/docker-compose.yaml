@@ -1,0 +1,67 @@
+version: "3.7"
+
+services:
+  nacos:
+    image: nacos/nacos-server:${NACOS_VERSION}
+    container_name: nacos-standalone
+    environment:
+      - PREFER_HOST_MODE=hostname
+      - MODE=standalone
+      - NACOS_AUTH_ENABLE=true                      # 啟用授權
+      - NACOS_AUTH_IDENTITY_KEY=serverIdentity      # 身份密鑰
+      - NACOS_AUTH_IDENTITY_VALUE=security           # 身份值
+      - NACOS_AUTH_TOKEN=SecretKey012345678901234567890123456789012345678901234567890123456789 # 安全金鑰
+      - NACOS_SERVER_IP=127.0.0.1                   # 指定 Nacos 伺服器 IP
+      - NACOS_SERVER_PORT=8848                       # Nacos 伺服器端口
+      - NACOS_USER=nacos                             # 設定默認用戶名
+      - NACOS_PASSWORD=nacos                         # 設定默認密碼
+      - NACOS_DATA_SOURCE=MYSQL                       # 指定使用 MySQL 作為數據源
+    volumes:
+      - ./standalone-logs/:/home/nacos/logs
+    ports:
+      - "8848:8848"
+      - "9848:9848"
+    networks:
+      - nacos-network
+
+  mysql:
+    container_name: nacos-mysql
+    image: mysql:8.0                       # 更新版本至 MySQL 8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: rootPassword     # MySQL 根密碼
+      MYSQL_DATABASE: nacos                  # 預設數據庫名稱
+      MYSQL_USER: nacos                      # MySQL 用戶名
+      MYSQL_PASSWORD: nacos123               # MySQL 用戶密碼
+    volumes:
+      - ./data:/var/lib/mysql                # 將資料持久化
+    ports:
+      - "3306:3306"                          # MySQL 端口
+    networks:
+      - nacos-network  
+    restart: always                          # 容器崩潰後自動重啟
+
+      #  prometheus:
+    #    container_name: prometheus
+      #    image: prom/prometheus:latest
+      #    volumes:
+      #      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+        #    ports:
+      #      - "9090:9090"
+        #    depends_on:
+      #      - nacos
+        #    networks:
+      #      - nacos-network  
+        #    restart: on-failure
+
+      #grafana:
+      #    container_name: grafana
+      #    image: grafana/grafana:latest
+      #    ports:
+      #      - "3000:3000"
+      #    networks:
+      #      - nacos-network  
+      #    restart: on-failure
+
+networks:
+  nacos-network:
+    driver: bridge
