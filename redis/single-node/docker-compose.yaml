@@ -4,9 +4,11 @@
 services:
   redis:
     image: docker.io/bitnami/redis:7.4
+    restart: always                          # 容器崩潰後自動重啟
     environment:
       # ALLOW_EMPTY_PASSWORD is recommended only for development.
       - ALLOW_EMPTY_PASSWORD=yes
+      - REDIS_PASSWORD=1qaz@WSX3edc
       - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
     ports:
       - '6379:6379'

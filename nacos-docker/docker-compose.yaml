@@ -3,6 +3,7 @@ version: "3.7"
 services:
   nacos:
     image: nacos/nacos-server:${NACOS_VERSION}
+    restart: always                          # 容器崩潰後自動重啟
     container_name: nacos-standalone
     environment:
       - PREFER_HOST_MODE=hostname
@@ -35,7 +36,7 @@ services:
     volumes:
       - ./data:/var/lib/mysql                # 將資料持久化
     ports:
-      - "3306:3306"                          # MySQL 端口
+      - "13306:3306"                          # MySQL 端口
     networks:
       - nacos-network  
     restart: always                          # 容器崩潰後自動重啟
