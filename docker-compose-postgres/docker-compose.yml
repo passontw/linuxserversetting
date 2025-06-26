@@ -1,33 +1,36 @@
-version: '3'
-
 services:
   database:
     image: 'postgres:latest'
     restart: always
     ports:
       - 15432:5432
-    env_file:
-      - .env
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=admin_password
+      - POSTGRES_DB=test_db
     networks:
       - postgres-network
     volumes:
       - ${PWD}/db-data/:/var/lib/postgresql/data/
       - ${PWD}/init.sql:/docker-entrypoint-initdb.d/init.sql
-  
+    restart: always
+
   pgadmin:
     image: dpage/pgadmin4
     restart: always
     ports:
       - 15433:80
-    env_file:
-      - .env
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@admin.com
+      - PGADMIN_DEFAULT_PASSWORD=admin_password
     depends_on:
       - database
     networks:
       - postgres-network
     volumes:
       - ${PWD}/pgadmin-data/:/var/lib/pgadmin/
+    restart: always
 
-networks: 
+networks:
   postgres-network:
     driver: bridge
