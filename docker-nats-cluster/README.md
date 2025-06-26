@@ -1,433 +1,213 @@
-# 🚀 NATS JetStream Cluster - 微服務訊息傳遞中心
+# NATS JetStream Cluster - Docker Compose Setup
 
-高可用性的 NATS JetStream 集群配置，專為微服務架構設計，支援進階 Access Control、多租戶隔離、Web UI 監控和 Prometheus 指標。
+🚀 完整的 NATS JetStream 集群配置，適用於微服務間消息傳遞
 
-## 📋 架構概覽
+## 📋 項目概述
 
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   NATS Node 1   │    │   NATS Node 2   │    │   NATS Node 3   │
-│   Port: 4222    │◄──►│   Port: 4223    │◄──►│   Port: 4224    │
-│ Monitor: 8222   │    │ Monitor: 8223   │    │ Monitor: 8224   │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                       │                       │
-         └───────────────────────┼───────────────────────┘
-                                 │
-                    ┌─────────────────┐
-                    │ NATS Surveyor   │
-                    │ Web UI: 7777    │
-                    └─────────────────┘
-```
+本項目提供了一個生產就緒的 NATS JetStream 3節點集群配置，包含：
 
-## ✨ 主要特性
-
-### 🔧 核心功能
-- **3 節點高可用集群** - 確保服務可靠性
-- **JetStream 啟用** - 每節點 4GB 持久化存儲
-- **資料持久化** - 配置檔案和數據的完整持久化
-- **專用 Docker 網路** - 網路隔離和安全性
-
-### 🔐 安全 & 權限控制
-- **進階 Access Control** - Account 隔離 + Subject 權限 + Rate Limiting
-- **多租戶隔離** - 開發/生產/微服務環境完全隔離
-- **細粒度權限** - 按微服務精確控制訊息權限
-- **Rate Limiting** - 防止服務濫用
-
-### 📊 監控 & 管理
-- **NATS Surveyor** - Web UI 監控和管理介面
-- **Prometheus Metrics** - 完整的監控指標支援
-- **健康檢查** - 自動健康狀態檢測
-- **詳細日誌** - 結構化日誌記錄
+- ✅ **3節點 NATS JetStream 集群**（每節點4GB存儲）
+- ✅ **多租戶帳戶系統**（開發、生產、微服務隔離）
+- ✅ **完整的訪問控制**（基於主題的細粒度權限）
+- ✅ **HTTP 監控介面**（每節點獨立監控）
+- ✅ **數據持久化**（自動volume掛載）
+- ✅ **健康檢查**（自動故障檢測）
+- ✅ **日誌記錄**（結構化日誌輸出）
 
 ## 🚀 快速開始
 
-### 1. 啟動服務
+### 1. 啟動集群
+
 ```bash
-# 進入專案目錄
-cd docker-nats-cluster
+# 啟動服務
+docker compose up -d
 
-# 啟動所有服務
-docker-compose up -d
-
-# 檢查服務狀態
-docker-compose ps
-
-# 查看日誌
-docker-compose logs -f
+# 檢查狀態  
+docker compose ps
 ```
 
-### 2. 驗證集群狀態
+### 2. 驗證部署
+
 ```bash
-# 檢查集群狀態
-curl http://localhost:8222/routez
-
-# 檢查 JetStream 狀態
-curl http://localhost:8222/jsz
+# 運行測試腳本
+./test-cluster.sh
 ```
 
-### 3. 存取 Web UI
-- **NATS Surveyor**: http://localhost:7777
-- **節點監控**: 
-  - Node 1: http://localhost:8222
-  - Node 2: http://localhost:8223  
-  - Node 3: http://localhost:8224
+### 3. 連接到集群
 
-## 🔑 預設帳號資訊
+```bash
+# 使用管理員帳戶連接（需要安裝 nats CLI）
+nats --server="nats://admin:nats123@localhost:4222" server info
 
-### 管理員帳戶
-```
-Username: admin
-Password: nats123
-權限: 完整存取所有主題
-用途: 系統管理和維護
+# 使用開發環境帳戶
+nats --server="nats://dev-user:dev123@localhost:4222" server info
 ```
 
-### 開發環境帳戶
-```
-Username: dev-user
-Password: dev123
-權限: dev.*, logs.dev.*, metrics.dev.*
-限制: 50 訂閱, 1MB 訊息, 100 msgs/sec
-```
-
-### 生產環境帳戶
-```
-Username: prod-user
-Password: prod456
-權限: prod.*, logs.prod.*, metrics.prod.*, alerts.*
-限制: 100 訂閱, 2MB 訊息, 500 msgs/sec
-```
-
-### 微服務帳戶
-
-#### 用戶服務
-```
-Username: user-service
-Password: user789
-權限: services.user.*, events.user.*, notifications.user.*
-限制: 30 訂閱, 512KB 訊息, 200 msgs/sec
-```
-
-#### 訂單服務
-```
-Username: order-service
-Password: order789
-權限: services.order.*, events.order.*, notifications.order.*
-限制: 30 訂閱, 1MB 訊息, 300 msgs/sec
-```
-
-#### 支付服務
-```
-Username: payment-service
-Password: payment789
-權限: services.payment.*, events.payment.*, notifications.payment.*
-限制: 20 訂閱, 512KB 訊息, 150 msgs/sec
-```
-
-#### 通知服務
-```
-Username: notification-service
-Password: notify789
-權限: notifications.send.*, events.notification.*
-限制: 50 訂閱, 256KB 訊息, 100 msgs/sec
-```
-
-### 監控帳戶
-```
-Username: monitor-user
-Password: monitor123
-權限: 完整監控權限 (metrics.*, logs.*, health.*, $SYS.*)
-限制: 200 訂閱, 1MB 訊息, 1000 msgs/sec
-```
-
-## 🔌 連接資訊
+## 🔧 服務端點
 
 ### 客戶端連接
+- **Node 1**: `nats://localhost:4222`
+- **Node 2**: `nats://localhost:4223` 
+- **Node 3**: `nats://localhost:4224`
+
+### 監控介面
+- **Node 1 監控**: http://localhost:8222
+- **Node 2 監控**: http://localhost:8223
+- **Node 3 監控**: http://localhost:8224
+
+### 健康檢查端點
 ```bash
-# 單節點連接
-nats://admin:nats123@localhost:4222
-
-# 集群連接（推薦）
-nats://admin:nats123@localhost:4222,localhost:4223,localhost:4224
+curl http://localhost:8222/healthz  # Node 1
+curl http://localhost:8223/healthz  # Node 2  
+curl http://localhost:8224/healthz  # Node 3
 ```
 
-### 程式碼範例 (Go)
-```go
-package main
+## 🔐 帳戶與權限
 
-import (
-    "log"
-    "github.com/nats-io/nats.go"
-)
-
-func main() {
-    // 連接到 NATS 集群
-    nc, err := nats.Connect(
-        "nats://user-service:user789@localhost:4222,localhost:4223,localhost:4224",
-        nats.MaxReconnects(5),
-        nats.ReconnectWait(2*time.Second),
-    )
-    if err != nil {
-        log.Fatal(err)
-    }
-    defer nc.Close()
-
-    // 發布訊息
-    err = nc.Publish("services.user.created", []byte("User created event"))
-    if err != nil {
-        log.Fatal(err)
-    }
-
-    // 訂閱訊息
-    sub, err := nc.Subscribe("events.auth.*", func(msg *nats.Msg) {
-        log.Printf("Received: %s", string(msg.Data))
-    })
-    if err != nil {
-        log.Fatal(err)
-    }
-    defer sub.Unsubscribe()
-
-    // 等待訊息
-    select {}
-}
+### 管理員帳戶 (ADMIN)
+```
+用戶: admin
+密碼: nats123
+權限: 完整存取權限 (所有主題)
 ```
 
-## 📊 監控端點
+### 開發環境帳戶 (DEV)
+```
+用戶: dev-user
+密碼: dev123
+權限: dev.*, logs.dev.*, metrics.dev.*
+```
 
-### Prometheus Metrics
+### 生產環境帳戶 (PROD)
+```
+用戶: prod-user
+密碼: prod456
+權限: prod.*, logs.prod.*, metrics.prod.*, alerts.*
+```
+
+### 微服務帳戶範例
 ```bash
-# 各節點的 Prometheus 指標
-curl http://localhost:8222/metrics  # Node 1
-curl http://localhost:8223/metrics  # Node 2  
-curl http://localhost:8224/metrics  # Node 3
+# 用戶服務
+用戶: user-service
+密碼: user789
+
+# 訂單服務  
+用戶: order-service
+密碼: order789
+
+# 支付服務
+用戶: payment-service
+密碼: payment789
+
+# 通知服務
+用戶: notification-service
+密碼: notify789
 ```
 
-### 監控 API
-```bash
-# 伺服器統計
-curl http://localhost:8222/varz
+## 📊 JetStream 配置
 
-# 連接資訊
-curl http://localhost:8222/connz
-
-# 路由資訊
-curl http://localhost:8222/routez
-
-# 訂閱資訊
-curl http://localhost:8222/subsz
-
-# JetStream 統計
-curl http://localhost:8222/jsz
-
-# 健康檢查
-curl http://localhost:8222/healthz
-```
-
-## 🔒 TLS 加密設定
-
-### 1. 生成證書
-```bash
-# 建立證書目錄
-mkdir -p certs
-
-# 生成 CA 私鑰
-openssl genrsa -out certs/ca.key 4096
-
-# 生成 CA 證書
-openssl req -new -x509 -days 365 -key certs/ca.key -out certs/ca.crt \
-    -subj "/C=TW/ST=Taiwan/L=Taipei/O=NATS-Cluster/CN=NATS-CA"
-
-# 生成伺服器私鑰
-openssl genrsa -out certs/server.key 4096
-
-# 生成伺服器證書請求
-openssl req -new -key certs/server.key -out certs/server.csr \
-    -subj "/C=TW/ST=Taiwan/L=Taipei/O=NATS-Cluster/CN=nats-server"
-
-# 生成伺服器證書
-openssl x509 -req -days 365 -in certs/server.csr -CA certs/ca.crt \
-    -CAkey certs/ca.key -CAcreateserial -out certs/server.crt
-
-# 生成客戶端私鑰
-openssl genrsa -out certs/client.key 4096
-
-# 生成客戶端證書請求
-openssl req -new -key certs/client.key -out certs/client.csr \
-    -subj "/C=TW/ST=Taiwan/L=Taipei/O=NATS-Cluster/CN=nats-client"
-
-# 生成客戶端證書
-openssl x509 -req -days 365 -in certs/client.csr -CA certs/ca.crt \
-    -CAkey certs/ca.key -CAcreateserial -out certs/client.crt
-```
-
-### 2. 修改配置檔案
-在每個節點的 `.conf` 檔案中啟用 TLS：
-
-```bash
-# 取消註解 TLS 配置區塊
-tls {
-    cert_file: "/etc/nats/certs/server.crt"
-    key_file: "/etc/nats/certs/server.key" 
-    ca_file: "/etc/nats/certs/ca.crt"
-    verify: true
-    timeout: 5
-}
-```
-
-### 3. 更新 Docker Compose
-```yaml
-volumes:
-  - ./certs:/etc/nats/certs:ro
-```
-
-### 4. 客戶端 TLS 連接
-```go
-// TLS 連接範例
-opts := []nats.Option{
-    nats.ClientCert("./certs/client.crt", "./certs/client.key"),
-    nats.RootCAs("./certs/ca.crt"),
-}
-
-nc, err := nats.Connect("tls://admin:nats123@localhost:4222", opts...)
-```
-
-## 🎛️ 進階配置
-
-### JetStream 管理
-```bash
-# 建立 Stream
-nats stream create ORDERS --subjects "orders.*" --storage file --replicas 3
-
-# 建立 Consumer
-nats consumer create ORDERS ORDER_PROCESSOR --pull --deliver all
-
-# 發布訊息到 Stream
-nats pub orders.created '{"order_id": "12345", "amount": 99.99}'
-
-# 從 Consumer 拉取訊息
-nats consumer next ORDERS ORDER_PROCESSOR
-```
-
-### 效能調校
-```bash
-# 調整 JetStream 記憶體限制
-# 在 nats-nodeX.conf 中:
-jetstream {
-    max_memory_store: 2GB
-    max_file_store: 8GB
-}
-
-# 調整連接限制
-max_connections: 2000
-max_payload: 32MB
-```
+每個節點配置：
+- **記憶體存儲**: 1GB
+- **檔案存儲**: 4GB  
+- **集群域**: nats-cluster
+- **複製因子**: 3 (高可用性)
 
 ## 🔧 常用命令
 
 ### 服務管理
 ```bash
-# 啟動服務
-docker-compose up -d
+# 啟動所有服務
+docker compose up -d
 
-# 停止服務
-docker-compose down
+# 停止所有服務
+docker compose down
 
-# 重新啟動服務
-docker-compose restart
+# 重啟特定服務
+docker compose restart nats-node1
 
-# 查看服務狀態
-docker-compose ps
-
-# 查看即時日誌
-docker-compose logs -f
-
-# 查看特定服務日誌
-docker-compose logs -f nats-node1
+# 查看日誌
+docker compose logs nats-node1 -f
 ```
 
-### 偵錯與維護
+### 集群監控
 ```bash
-# 進入容器
-docker-compose exec nats-node1 sh
+# 檢查集群狀態
+curl -s http://localhost:8222/routez
 
-# 檢查配置
-docker-compose exec nats-node1 cat /nats-server.conf
+# 檢查 JetStream 狀態  
+curl -s http://localhost:8222/jsz
 
-# 清理資料（謹慎使用）
-docker-compose down -v
+# 檢查帳戶資訊
+curl -s http://localhost:8222/accountz
 ```
 
-## 📁 資料夾結構
+## 📈 監控與指標
+
+### 內建監控端點
+```bash
+# 服務器資訊
+curl http://localhost:8222/varz
+
+# 連接資訊  
+curl http://localhost:8222/connz
+
+# JetStream 資訊
+curl http://localhost:8222/jsz
+```
+
+### Prometheus 監控
+NATS 2.10 不包含內建的 `/metrics` 端點。如需 Prometheus 監控，請使用官方 exporter：
+
+```bash
+# 使用 NATS Prometheus Exporter
+docker run -d \
+  --name nats-exporter \
+  --network nats-cluster-network \
+  -p 7778:7777 \
+  natsio/prometheus-nats-exporter:latest \
+  -varz -connz -routez -subz -jsz=all \
+  http://nats-node1:8222
+```
+
+## 🛠️ 故障排除
+
+### 常見問題
+
+**1. JetStream 顯示 "等待 meta leader 選舉"**
+- ✅ 正常現象，集群啟動需要選舉 leader
+- ⏱️ 通常在 30-60 秒內完成
+
+**2. 節點無法連接**
+- 檢查端口是否被佔用: `netstat -tlnp | grep :4222`
+- 檢查防火牆設置
+
+**3. 權限被拒絕**
+- 確認使用正確的帳戶/密碼
+- 檢查主題權限配置
+
+## 📂 項目結構
 
 ```
 docker-nats-cluster/
 ├── docker-compose.yaml          # Docker Compose 配置
-├── config/                      # 配置檔案目錄
-│   ├── accounts.conf           # Account 和權限配置
-│   ├── nats-node1.conf         # 節點 1 配置
-│   ├── nats-node2.conf         # 節點 2 配置
-│   └── nats-node3.conf         # 節點 3 配置
-├── data/                       # 資料持久化目錄
-│   ├── node1/                  # 節點 1 資料
-│   │   ├── jetstream/          # JetStream 資料
-│   │   └── logs/               # 日誌檔案
-│   ├── node2/                  # 節點 2 資料
-│   │   ├── jetstream/
-│   │   └── logs/
-│   └── node3/                  # 節點 3 資料
-│       ├── jetstream/
-│       └── logs/
-├── certs/                      # TLS 證書目錄 (選用)
-└── README.md                   # 本說明文件
+├── config/                      # NATS 配置文件
+│   ├── accounts.conf           # 帳戶與權限配置  
+│   ├── nats-node1.conf         # Node 1 配置
+│   ├── nats-node2.conf         # Node 2 配置
+│   └── nats-node3.conf         # Node 3 配置
+├── data/                       # 數據持久化目錄
+├── test-cluster.sh             # 集群測試腳本
+└── README.md                   # 本文檔
 ```
 
-## 🚨 注意事項
+## 🔗 相關資源
 
-### 安全考量
-1. **生產環境** 務必修改所有預設密碼
-2. **TLS 加密** 生產環境建議啟用 TLS
-3. **防火牆** 適當設定防火牆規則
-4. **網路隔離** 使用專用網路進行隔離
+- **NATS 官方文檔**: https://docs.nats.io/
+- **JetStream 指南**: https://docs.nats.io/nats-concepts/jetstream
+- **NATS CLI 工具**: https://github.com/nats-io/natscli
 
-### 效能最佳化
-1. **儲存效能** 使用 SSD 以提升 JetStream 效能
-2. **記憶體配置** 根據訊息量調整記憶體限制
-3. **網路頻寬** 確保足夠的網路頻寬
-4. **監控告警** 設定適當的監控告警
+## 📝 版本資訊
 
-### 備份策略
-1. **配置備份** 定期備份 config/ 目錄
-2. **資料備份** 定期備份 data/ 目錄
-3. **版本控制** 將配置檔案納入版本控制
-4. **災難復原** 建立完整的災難復原程序
-
-## 📞 支援與協助
-
-### 故障排除
-1. **服務無法啟動** 檢查連接埠是否被占用
-2. **集群無法形成** 檢查網路連接和防火牆設定
-3. **認證失敗** 確認帳號密碼正確
-4. **儲存空間不足** 檢查磁碟空間和 JetStream 限制
-
-### 日誌分析
-```bash
-# 查看錯誤日誌
-docker-compose logs nats-node1 | grep ERROR
-
-# 查看連接日誌
-docker-compose logs nats-node1 | grep "Client connection"
-
-# 查看集群日誌
-docker-compose logs nats-node1 | grep "Route connection"
-```
-
-### 社群資源
-- [NATS 官方文檔](https://docs.nats.io/)
-- [JetStream 指南](https://docs.nats.io/jetstream)
-- [NATS GitHub](https://github.com/nats-io)
-
----
-
-🎉 **恭喜！您已成功設定 NATS JetStream 集群！**
-
-現在您可以開始使用這個強大的微服務訊息傳遞中心來建構您的分散式系統。 
+- **NATS Server**: 2.10.29-alpine
+- **Docker Compose**: 3.8+
+- **最後更新**: 2024年

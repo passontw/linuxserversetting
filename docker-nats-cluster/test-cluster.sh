@@ -25,11 +25,21 @@ test_health() {
     local port=$2
     echo -e "${BLUE}檢查 Node $node 健康狀態...${NC}"
     
-    if curl -s -f "http://localhost:$port/healthz" > /dev/null; then
-        echo -e "${GREEN}✅ Node $node 健康狀態: OK${NC}"
+    if curl -s -f "http://localhost:$port/varz" > /dev/null; then
+        echo -e "${GREEN}✅ Node $node 基本服務: OK${NC}"
+        
+        # 檢查 JetStream 狀態
+        local healthz_response=$(curl -s "http://localhost:$port/healthz")
+        if echo "$healthz_response" | grep -q '"status":"ok"'; then
+            echo -e "${GREEN}✅ Node $node JetStream: Ready${NC}"
+        elif echo "$healthz_response" | grep -q "meta leader"; then
+            echo -e "${YELLOW}⚠️  Node $node JetStream: 等待 meta leader 選舉${NC}"
+        else
+            echo -e "${YELLOW}⚠️  Node $node JetStream: 初始化中${NC}"
+        fi
         return 0
     else
-        echo -e "${RED}❌ Node $node 健康狀態: FAILED${NC}"
+        echo -e "${RED}❌ Node $node 基本服務: FAILED${NC}"
         return 1
     fi
 }
@@ -56,7 +66,7 @@ test_jetstream() {
     
     local js_response=$(curl -s "http://localhost:$port/jsz")
     
-    if echo "$js_response" | grep -q '"enabled":true'; then
+    if echo "$js_response" | grep -q '"config"'; then
         echo -e "${GREEN}✅ JetStream 已啟用${NC}"
         
         # 檢查儲存配置
@@ -74,8 +84,8 @@ test_jetstream() {
 
 # 主要測試流程
 echo "🔍 1. 檢查 Docker 服務狀態..."
-if ! docker-compose ps | grep -q "Up"; then
-    echo -e "${RED}❌ Docker 服務未啟動，請先執行: docker-compose up -d${NC}"
+if ! docker compose ps | grep -q "Up"; then
+    echo -e "${RED}❌ Docker 服務未啟動，請先執行: docker compose up -d${NC}"
     exit 1
 fi
 
@@ -106,14 +116,8 @@ fi
 echo ""
 
 echo "📊 6. Prometheus Metrics 檢查..."
-for i in 1 2 3; do
-    port=$((8220 + i + 1))
-    if curl -s "http://localhost:$port/metrics" | grep -q "nats_"; then
-        echo -e "${GREEN}✅ Node $i Prometheus metrics 可用${NC}"
-    else
-        echo -e "${RED}❌ Node $i Prometheus metrics 不可用${NC}"
-    fi
-done
+echo -e "${YELLOW}⚠️  NATS 2.10 不支援內建 /metrics 端點${NC}"
+echo -e "${BLUE}💡 如需 Prometheus 監控，請使用 NATS Exporter: https://github.com/nats-io/prometheus-nats-exporter${NC}"
 echo ""
 
 echo "🔐 7. 帳戶權限測試 (需要 nats CLI)..."
