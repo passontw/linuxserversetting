@@ -106,12 +106,34 @@ echo "💾 4. JetStream 狀態檢查..."
 test_jetstream "8222"
 echo ""
 
-echo "🖥️  5. 檢查 NATS Surveyor..."
-if curl -s -f "http://localhost:7777" > /dev/null; then
-    echo -e "${GREEN}✅ NATS Surveyor Web UI 正常運行${NC}"
-    echo -e "${BLUE}🌐 Web UI 地址: http://localhost:7777${NC}"
+echo "🖥️  5. 檢查監控服務..."
+
+# 檢查 NATS Surveyor (Prometheus Exporter)
+if curl -s -f "http://localhost:7777/metrics" > /dev/null; then
+    echo -e "${GREEN}✅ NATS Surveyor (Prometheus Exporter) 正常運行${NC}"
+    echo -e "${BLUE}📊 Prometheus Metrics: http://localhost:7777/metrics${NC}"
+    
+    # 計算 metrics 數量
+    metrics_count=$(curl -s "http://localhost:7777/metrics" | grep -c "^# HELP")
+    echo -e "${GREEN}📈 可用指標數量: $metrics_count${NC}"
 else
-    echo -e "${RED}❌ NATS Surveyor Web UI 無法存取${NC}"
+    echo -e "${RED}❌ NATS Surveyor 無法存取${NC}"
+fi
+
+# 檢查額外的 Prometheus Exporter
+if curl -s -f "http://localhost:7778/metrics" > /dev/null; then
+    echo -e "${GREEN}✅ NATS Prometheus Exporter 正常運行${NC}"
+    echo -e "${BLUE}📊 額外 Prometheus Metrics: http://localhost:7778/metrics${NC}"
+else
+    echo -e "${RED}❌ NATS Prometheus Exporter 無法存取${NC}"
+fi
+
+# 檢查 NATS Box
+if docker compose ps nats-box | grep -q "Up"; then
+    echo -e "${GREEN}✅ NATS Box 管理容器正常運行${NC}"
+    echo -e "${BLUE}🔧 可使用指令: docker compose exec nats-box nats --help${NC}"
+else
+    echo -e "${RED}❌ NATS Box 管理容器未運行${NC}"
 fi
 echo ""
 
@@ -149,15 +171,18 @@ echo -e "   Node 2: nats://localhost:4223"
 echo -e "   Node 3: nats://localhost:4224"
 echo ""
 echo -e "${GREEN}🖥️  管理介面:${NC}"
-echo -e "   NATS Surveyor: http://localhost:7777"
 echo -e "   Node 1 Monitor: http://localhost:8222"
 echo -e "   Node 2 Monitor: http://localhost:8223"
 echo -e "   Node 3 Monitor: http://localhost:8224"
 echo ""
 echo -e "${GREEN}📊 Prometheus Metrics:${NC}"
-echo -e "   Node 1: http://localhost:8222/metrics"
-echo -e "   Node 2: http://localhost:8223/metrics"
-echo -e "   Node 3: http://localhost:8224/metrics"
+echo -e "   NATS Surveyor: http://localhost:7777/metrics"
+echo -e "   NATS Exporter: http://localhost:7778/metrics"
+echo ""
+echo -e "${GREEN}🔧 管理工具:${NC}"
+echo -e "   NATS CLI: docker compose exec nats-box nats"
+echo -e "   NATS Top: docker compose exec nats-box nats-top"
+echo -e "   NATS Bench: docker compose exec nats-box nats-bench"
 echo ""
 
 echo -e "${GREEN}🎉 測試完成！${NC}"

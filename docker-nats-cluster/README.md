@@ -156,17 +156,74 @@ curl http://localhost:8222/jsz
 ```
 
 ### Prometheus 監控
-NATS 2.10 不包含內建的 `/metrics` 端點。如需 Prometheus 監控，請使用官方 exporter：
+本項目包含兩個 Prometheus Exporter：
+
+**1. NATS Surveyor (端口 7777)**
+```bash
+# 查看可用指標
+curl http://localhost:7777/metrics
+
+# 指標涵蓋：帳戶統計、連接數、JetStream 資訊等
+# 可用指標數量：約 45 個指標組
+```
+
+**2. NATS Prometheus Exporter (端口 7778)**  
+```bash
+# 查看額外指標
+curl http://localhost:7778/metrics
+
+# 指標涵蓋：連接詳情、路由資訊、訂閱統計等
+```
+
+**Prometheus 配置範例**
+```yaml
+# prometheus.yml
+scrape_configs:
+  - job_name: 'nats-surveyor'
+    static_configs:
+      - targets: ['localhost:7777']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  - job_name: 'nats-exporter'
+    static_configs:
+      - targets: ['localhost:7778']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+```
+
+## 🔧 管理工具
+
+### NATS Box CLI 工具
+本項目包含 NATS Box 容器，提供完整的 NATS 管理工具：
 
 ```bash
-# 使用 NATS Prometheus Exporter
-docker run -d \
-  --name nats-exporter \
-  --network nats-cluster-network \
-  -p 7778:7777 \
-  natsio/prometheus-nats-exporter:latest \
-  -varz -connz -routez -subz -jsz=all \
-  http://nats-node1:8222
+# 基本連接測試
+docker compose exec nats-box nats --server="nats://admin:nats123@nats-node1:4222" pub test.hello "Hello NATS"
+
+# 查看可用命令
+docker compose exec nats-box nats --help
+
+# 使用 NATS Top 監控
+docker compose exec nats-box nats-top --server="nats://admin:nats123@nats-node1:4222"
+
+# 效能測試
+docker compose exec nats-box nats-bench --server="nats://admin:nats123@nats-node1:4222" test.bench
+```
+
+### JetStream 管理
+```bash
+# 創建 Stream
+docker compose exec nats-box nats --server="nats://admin:nats123@nats-node1:4222" \
+  stream create ORDERS --subjects "orders.*" --storage file --replicas 3
+
+# 創建 Consumer  
+docker compose exec nats-box nats --server="nats://admin:nats123@nats-node1:4222" \
+  consumer create ORDERS ORDER_PROCESSOR --pull --deliver all
+
+# 發布訊息到 Stream
+docker compose exec nats-box nats --server="nats://admin:nats123@nats-node1:4222" \
+  pub orders.created '{"order_id": "12345", "amount": 99.99}'
 ```
 
 ## 🛠️ 故障排除

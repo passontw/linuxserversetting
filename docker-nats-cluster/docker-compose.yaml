@@ -76,17 +76,22 @@ services:
       retries: 3
       start_period: 20s
 
-  # NATS Surveyor - Web UI for monitoring and management
+  # NATS Surveyor - Web UI for monitoring and management (也是 Prometheus Exporter)
   nats-surveyor:
     image: natsio/nats-surveyor:latest
     container_name: nats-surveyor
     hostname: nats-surveyor
     ports:
       - "7777:7777"
+    environment:
+      - NATS_SURVEYOR_SERVERS=nats://admin:nats123@nats-node1:4222,nats://admin:nats123@nats-node2:4222,nats://admin:nats123@nats-node3:4222
     command: [
-      "-s", "nats://admin:nats123@nats-node1:4222",
-      "-p", "7777",
-      "-a", "0.0.0.0"
+      "--servers", "nats://admin:nats123@nats-node1:4222,nats://admin:nats123@nats-node2:4222,nats://admin:nats123@nats-node3:4222",
+      "--port", "7777",
+      "--addr", "0.0.0.0",
+      "--count", "3",
+      "--accounts",
+      "--jsz", "all"
     ]
     networks:
       - nats-cluster-network
@@ -96,11 +101,56 @@ services:
       - nats-node2 
       - nats-node3
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:7777"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:7777/metrics"]
       interval: 15s
       timeout: 5s
       retries: 3
       start_period: 30s
+
+  # NATS Prometheus Exporter - 監控指標導出
+  nats-exporter:
+    image: natsio/prometheus-nats-exporter:latest
+    container_name: nats-exporter
+    hostname: nats-exporter
+    ports:
+      - "7778:7777"  # Prometheus metrics 端點
+    command: [
+      "-varz", "-connz", "-routez", "-subz", "-jsz=all", "-gatewayz",
+      "-port=7777",
+      "-addr=0.0.0.0",
+      "-DV",  # Debug mode for verbose logging
+      "http://nats-node1:8222"
+    ]
+    networks:
+      - nats-cluster-network
+    restart: unless-stopped
+    depends_on:
+      - nats-node1
+      - nats-node2
+      - nats-node3
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:7777/metrics"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  # NATS Box - CLI 管理工具容器
+  nats-box:
+    image: natsio/nats-box:latest
+    container_name: nats-box
+    hostname: nats-box
+    # 不需要端口映射，主要用作管理工具
+    environment:
+      - NATS_URL=nats://admin:nats123@nats-node1:4222,nats://admin:nats123@nats-node2:4222,nats://admin:nats123@nats-node3:4222
+    command: ["sh", "-c", "while true; do sleep 30; done"]  # 保持容器運行
+    networks:
+      - nats-cluster-network
+    restart: unless-stopped
+    depends_on:
+      - nats-node1
+      - nats-node2
+      - nats-node3
 
 networks:
   nats-cluster-network:
