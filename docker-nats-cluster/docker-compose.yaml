@@ -1,0 +1,162 @@
+version: '3.8'
+
+services:
+  # NATS Node 1
+  nats-node1:
+    image: nats:2.10-alpine
+    container_name: nats-node1
+    hostname: nats-node1
+    ports:
+      - "4222:4222"  # Client connections
+      - "6222:6222"  # Cluster connections
+      - "8222:8222"  # HTTP monitoring
+    volumes:
+      - ./config/nats-node1.conf:/nats-server.conf:ro
+      - ./config/accounts.conf:/accounts.conf:ro
+      - ./data/node1:/data
+    command: ["-c", "/nats-server.conf"]
+    networks:
+      - nats-cluster-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8222/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # NATS Node 2  
+  nats-node2:
+    image: nats:2.10-alpine
+    container_name: nats-node2
+    hostname: nats-node2
+    ports:
+      - "4223:4222"  # Client connections
+      - "6223:6222"  # Cluster connections  
+      - "8223:8222"  # HTTP monitoring
+    volumes:
+      - ./config/nats-node2.conf:/nats-server.conf:ro
+      - ./config/accounts.conf:/accounts.conf:ro
+      - ./data/node2:/data
+    command: ["-c", "/nats-server.conf"]
+    networks:
+      - nats-cluster-network
+    restart: unless-stopped  
+    depends_on:
+      - nats-node1
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8222/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  # NATS Node 3
+  nats-node3:
+    image: nats:2.10-alpine
+    container_name: nats-node3
+    hostname: nats-node3
+    ports:
+      - "4224:4222"  # Client connections
+      - "6224:6222"  # Cluster connections
+      - "8224:8222"  # HTTP monitoring
+    volumes:
+      - ./config/nats-node3.conf:/nats-server.conf:ro
+      - ./config/accounts.conf:/accounts.conf:ro
+      - ./data/node3:/data
+    command: ["-c", "/nats-server.conf"]
+    networks:
+      - nats-cluster-network
+    restart: unless-stopped
+    depends_on:
+      - nats-node1
+      - nats-node2
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8222/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  # NATS Surveyor - Web UI for monitoring and management
+  nats-surveyor:
+    image: natsio/nats-surveyor:latest
+    container_name: nats-surveyor
+    hostname: nats-surveyor
+    ports:
+      - "7777:7777"
+    environment:
+      # Default admin credentials (記錄在註解中)
+      # Username: admin
+      # Password: surveyor123  
+      NATS_SURVEYOR_SERVER_URLS: "nats://admin:nats123@nats-node1:4222,nats://admin:nats123@nats-node2:4222,nats://admin:nats123@nats-node3:4222"
+      NATS_SURVEYOR_HTTP_PORT: "7777"
+      NATS_SURVEYOR_CREDENTIALS_FILE: ""
+    networks:
+      - nats-cluster-network
+    restart: unless-stopped
+    depends_on:
+      - nats-node1
+      - nats-node2 
+      - nats-node3
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:7777/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+networks:
+  nats-cluster-network:
+    name: nats-cluster-network
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  nats-node1-data:
+    driver: local
+  nats-node2-data:
+    driver: local  
+  nats-node3-data:
+    driver: local
+
+# Default Connection Information (記錄在註解中):
+# =====================================================
+# Client Connections:
+#   Node 1: localhost:4222
+#   Node 2: localhost:4223  
+#   Node 3: localhost:4224
+#
+# Default Accounts & Credentials:
+# =====================================================
+# Admin Account:
+#   Username: admin
+#   Password: nats123
+#   Permissions: Full access to all subjects
+#
+# Development Account:  
+#   Username: dev-user
+#   Password: dev123
+#   Permissions: dev.* subjects only
+#
+# Production Account:
+#   Username: prod-user  
+#   Password: prod456
+#   Permissions: prod.* subjects only
+#
+# Microservices Account:
+#   Username: service-user
+#   Password: service789
+#   Permissions: services.* subjects with rate limiting
+#
+# Web UI Access:
+# =====================================================
+# NATS Surveyor: http://localhost:7777
+#
+# Monitoring Endpoints:
+# =====================================================  
+# Node 1 Monitoring: http://localhost:8222
+# Node 2 Monitoring: http://localhost:8223
+# Node 3 Monitoring: http://localhost:8224 
