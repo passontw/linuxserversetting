@@ -1,0 +1,35 @@
+apiVersion: 1
+
+providers:
+  # NATS 儀表板提供者
+  - name: 'nats-dashboards'
+    orgId: 1
+    folder: 'NATS'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards/nats
+
+  # 系統監控儀表板
+  - name: 'system-dashboards'  
+    orgId: 1
+    folder: 'System'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards/system
+
+  # 日誌分析儀表板
+  - name: 'logs-dashboards'
+    orgId: 1
+    folder: 'Logs'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards/logs 

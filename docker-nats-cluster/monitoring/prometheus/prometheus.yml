@@ -1,0 +1,53 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  # - "first_rules.yml"
+  # - "second_rules.yml"
+
+scrape_configs:
+  # Prometheus 自身監控
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # NATS Surveyor - 主要的 NATS 指標
+  - job_name: 'nats-surveyor'
+    static_configs:
+      - targets: ['nats-surveyor:7777']
+    scrape_interval: 30s
+    metrics_path: '/metrics'
+    params:
+      format: ['prometheus']
+
+  # NATS Prometheus Exporter - 額外的技術指標  
+  - job_name: 'nats-exporter'
+    static_configs:
+      - targets: ['nats-exporter:7777']
+    scrape_interval: 30s
+    metrics_path: '/metrics'
+
+  # NATS 節點監控端點（原生指標）
+  - job_name: 'nats-nodes'
+    static_configs:
+      - targets: 
+        - 'nats-node1:8222'
+        - 'nats-node2:8222' 
+        - 'nats-node3:8222'
+    scrape_interval: 30s
+    metrics_path: '/varz'
+    params:
+      format: ['prometheus']
+
+  # JetStream 監控
+  - job_name: 'nats-jetstream'
+    static_configs:
+      - targets:
+        - 'nats-node1:8222'
+        - 'nats-node2:8222'
+        - 'nats-node3:8222'
+    scrape_interval: 30s
+    metrics_path: '/jsz'
+    params:
+      format: ['prometheus'] 

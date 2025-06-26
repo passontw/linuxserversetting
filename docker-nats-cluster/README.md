@@ -268,3 +268,27 @@ docker-nats-cluster/
 - **NATS Server**: 2.10.29-alpine
 - **Docker Compose**: 3.8+
 - **最後更新**: 2024年
+
+## 📊 完整監控解決方案
+
+本項目整合了企業級的 NATS JetStream 監控堆疊：
+
+### 🎯 監控功能
+- **指標監控**: 雙重 Prometheus Exporter 提供 45+ 指標
+- **日誌聚合**: Loki + Promtail 自動收集分析日誌
+- **視覺化**: Grafana 儀表板實時監控集群狀態
+- **告警**: 可配置的告警規則和通知
+
+### 🚀 快速存取
+- **Grafana**: http://localhost:3000 (admin/admin123)
+- **Prometheus**: http://localhost:9090
+- **Loki**: http://localhost:3100
+
+### 📈 包含儀表板
+1. **NATS JetStream 集群監控**: 核心指標和效能
+2. **NATS 日誌分析**: 結構化日誌查詢和分析
+
+### 📚 詳細說明
+完整的監控設定和使用指南請參考 [MONITORING_GUIDE.md](./MONITORING_GUIDE.md)
+
+---

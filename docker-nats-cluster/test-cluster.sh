@@ -128,6 +128,30 @@ else
     echo -e "${RED}❌ NATS Prometheus Exporter 無法存取${NC}"
 fi
 
+# 檢查 Prometheus
+if curl -s -f "http://localhost:9090/-/healthy" > /dev/null; then
+    echo -e "${GREEN}✅ Prometheus 正常運行${NC}"
+    echo -e "${BLUE}📊 Prometheus UI: http://localhost:9090${NC}"
+else
+    echo -e "${RED}❌ Prometheus 無法存取${NC}"
+fi
+
+# 檢查 Grafana
+if curl -s -f "http://localhost:3000/api/health" > /dev/null; then
+    echo -e "${GREEN}✅ Grafana 正常運行${NC}"
+    echo -e "${BLUE}📊 Grafana UI: http://localhost:3000 (admin/admin123)${NC}"
+else
+    echo -e "${RED}❌ Grafana 無法存取${NC}"
+fi
+
+# 檢查 Loki
+if curl -s -f "http://localhost:3100/ready" > /dev/null; then
+    echo -e "${GREEN}✅ Loki 正常運行${NC}"
+    echo -e "${BLUE}📊 Loki API: http://localhost:3100${NC}"
+else
+    echo -e "${RED}❌ Loki 無法存取${NC}"
+fi
+
 # 檢查 NATS Box
 if docker compose ps nats-box | grep -q "Up"; then
     echo -e "${GREEN}✅ NATS Box 管理容器正常運行${NC}"
@@ -170,7 +194,7 @@ echo -e "   Node 1: nats://localhost:4222"
 echo -e "   Node 2: nats://localhost:4223"
 echo -e "   Node 3: nats://localhost:4224"
 echo ""
-echo -e "${GREEN}🖥️  管理介面:${NC}"
+echo -e "${GREEN}🖥️  NATS 管理介面:${NC}"
 echo -e "   Node 1 Monitor: http://localhost:8222"
 echo -e "   Node 2 Monitor: http://localhost:8223"
 echo -e "   Node 3 Monitor: http://localhost:8224"
@@ -178,6 +202,17 @@ echo ""
 echo -e "${GREEN}📊 Prometheus Metrics:${NC}"
 echo -e "   NATS Surveyor: http://localhost:7777/metrics"
 echo -e "   NATS Exporter: http://localhost:7778/metrics"
+echo -e "   Prometheus UI: http://localhost:9090"
+echo ""
+echo -e "${GREEN}📈 視覺化監控:${NC}"
+echo -e "   Grafana UI: http://localhost:3000 (admin/admin123)"
+echo -e "   - NATS JetStream Overview 儀表板"
+echo -e "   - NATS Logs Analysis 儀表板"
+echo ""
+echo -e "${GREEN}📝 日誌聚合:${NC}"
+echo -e "   Loki API: http://localhost:3100"
+echo -e "   - Docker 容器日誌自動收集"
+echo -e "   - NATS 特定日誌解析"
 echo ""
 echo -e "${GREEN}🔧 管理工具:${NC}"
 echo -e "   NATS CLI: docker compose exec nats-box nats"
