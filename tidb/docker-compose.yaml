@@ -1,0 +1,70 @@
+version: '3.8'
+services:
+  pd:
+    image: pingcap/pd:v7.5.0
+    container_name: pd
+    ports:
+      - 2379:2379 # PD client port
+      - 2380:2380 # PD peer port
+    volumes:
+      - ./data/pd:/data/pd
+    command:
+      - --name=pd
+      - --data-dir=/data/pd
+      - --client-urls=http://0.0.0.0:2379
+      - --peer-urls=http://0.0.0.0:2380
+      - --initial-cluster=pd=http://0.0.0.0:2380
+    networks:
+      - tidb
+
+  tikv:
+    image: pingcap/tikv:v7.5.0
+    container_name: tikv
+    ports:
+      - 20160:20160 # TiKV port
+    depends_on:
+      - pd
+    volumes:
+      - ./data/tikv:/data/tikv
+    command:
+      - --addr=0.0.0.0:20160
+      - --pd=pd:2379
+      - --data-dir=/data/tikv
+    networks:
+      - tidb
+
+  tidb:
+    image: pingcap/tidb:v7.5.0
+    container_name: tidb
+    ports:
+      - 4000:4000 # MySQL protocol port
+      - 10080:10080 # Status port
+    depends_on:
+      - pd
+      - tikv
+    volumes:
+      - ./data/tidb:/data/tidb
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    command:
+      - sh
+      - -c
+      - |
+        /tidb-server --store=tikv --path=pd:2379 --log-file=/data/tidb/tidb.log &
+        sleep 10
+        mysql -h 127.0.0.1 -P 4000 -u root < /docker-entrypoint-initdb.d/init.sql
+        wait
+    networks:
+      - tidb
+
+networks:
+  tidb:
+    driver: bridge
+
+# 數據資料會分別掛載到 ./data/pd、./data/tikv、./data/tidb
+# 啟動方式：
+#   cd tidb
+#   docker compose up -d
+# 預設 TiDB 服務在 4000 端口，可用 MySQL 客戶端連線 
+# mysql -h 127.0.0.1 -P 4000 -u root
+# CREATE DATABASE testdb;
+#   ALTER USER 'root'@'%' IDENTIFIED BY '1qaz@WSX3edc';
