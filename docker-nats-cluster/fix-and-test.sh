@@ -16,6 +16,13 @@ echo "============================================"
 echo "📁 0. 創建必要的目錄結構..."
 mkdir -p data/node1/logs data/node2/logs data/node3/logs
 echo "✅ 日誌目錄結構已創建"
+
+# 驗證目錄創建成功
+if [ ! -d "data/node1/logs" ] || [ ! -d "data/node2/logs" ] || [ ! -d "data/node3/logs" ]; then
+    echo "❌ 日誌目錄創建失敗，請檢查權限"
+    exit 1
+fi
+echo "✅ 日誌目錄創建驗證通過"
 echo ""
 
 # 顏色定義
