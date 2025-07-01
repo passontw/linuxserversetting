@@ -84,9 +84,9 @@ services:
     ports:
       - "7777:7777"
     environment:
-      - NATS_SURVEYOR_SERVERS=nats://monitor-user:monitor123@nats-node1:4222,nats://monitor-user:monitor123@nats-node2:4222,nats://monitor-user:monitor123@nats-node3:4222
+      - NATS_SURVEYOR_SERVERS=nats://sys-user:sys123@nats-node1:4222,nats://sys-user:sys123@nats-node2:4222,nats://sys-user:sys123@nats-node3:4222
     command: [
-      "--servers", "nats://monitor-user:monitor123@nats-node1:4222,nats://monitor-user:monitor123@nats-node2:4222,nats://monitor-user:monitor123@nats-node3:4222",
+      "--servers", "nats://sys-user:sys123@nats-node1:4222,nats://sys-user:sys123@nats-node2:4222,nats://sys-user:sys123@nats-node3:4222",
       "--port", "7777",
       "--addr", "0.0.0.0",
       "--count", "3",
@@ -196,51 +196,6 @@ services:
     restart: unless-stopped
     depends_on:
       - prometheus
-      - loki
-
-  # Loki - 日誌聚合服務
-  loki:
-    image: grafana/loki:latest
-    container_name: loki
-    hostname: loki
-    ports:
-      - "3100:3100"
-    volumes:
-      - ./monitoring/loki:/etc/loki:ro
-      - loki-data:/tmp/loki
-    environment:
-      - LOKI_CONFIG_FILE=/etc/loki/loki-config.yml
-    command: -config.file=/etc/loki/loki-config.yml
-    networks:
-      - nats-cluster-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3100/ready"]
-      interval: 15s
-      timeout: 5s
-      retries: 3
-      start_period: 30s
-
-  # Promtail - 日誌收集代理
-  promtail:
-    image: grafana/promtail:latest
-    container_name: promtail
-    hostname: promtail
-    volumes:
-      - ./monitoring/promtail:/etc/promtail:ro
-      - /var/log:/var/log:ro
-      - /var/lib/docker/containers:/var/lib/docker/containers:ro
-    command: -config.file=/etc/promtail/promtail-config.yml
-    networks:
-      - nats-cluster-network
-    restart: unless-stopped
-    depends_on:
-      - loki
-
-networks:
-  nats-cluster-network:
-    name: nats-cluster-network
-    driver: bridge
 
 volumes:
   nats-node1-data:
@@ -252,8 +207,6 @@ volumes:
   prometheus-data:
     driver: local
   grafana-data:
-    driver: local
-  loki-data:
     driver: local
 
 # Default Connection Information (記錄在註解中):
@@ -294,3 +247,8 @@ volumes:
 # Node 1 Monitoring: http://localhost:8222
 # Node 2 Monitoring: http://localhost:8223
 # Node 3 Monitoring: http://localhost:8224 
+
+networks:
+  nats-cluster-network:
+    name: nats-cluster-network
+    driver: bridge

@@ -144,14 +144,6 @@ else
     echo -e "${RED}❌ Grafana 無法存取${NC}"
 fi
 
-# 檢查 Loki
-if curl -s -f "http://localhost:3100/ready" > /dev/null; then
-    echo -e "${GREEN}✅ Loki 正常運行${NC}"
-    echo -e "${BLUE}📊 Loki API: http://localhost:3100${NC}"
-else
-    echo -e "${RED}❌ Loki 無法存取${NC}"
-fi
-
 # 檢查 NATS Box
 if docker compose ps nats-box | grep -q "Up"; then
     echo -e "${GREEN}✅ NATS Box 管理容器正常運行${NC}"
@@ -207,12 +199,6 @@ echo ""
 echo -e "${GREEN}📈 視覺化監控:${NC}"
 echo -e "   Grafana UI: http://localhost:3000 (admin/admin123)"
 echo -e "   - NATS JetStream Overview 儀表板"
-echo -e "   - NATS Logs Analysis 儀表板"
-echo ""
-echo -e "${GREEN}📝 日誌聚合:${NC}"
-echo -e "   Loki API: http://localhost:3100"
-echo -e "   - Docker 容器日誌自動收集"
-echo -e "   - NATS 特定日誌解析"
 echo ""
 echo -e "${GREEN}🔧 管理工具:${NC}"
 echo -e "   NATS CLI: docker compose exec nats-box nats"

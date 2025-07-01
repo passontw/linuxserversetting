@@ -12,6 +12,12 @@ set -e
 echo "🔧 NATS JetStream Cluster 問題修復與測試開始..."
 echo "============================================"
 
+# 0. 預先創建必要的目錄結構
+echo "📁 0. 創建必要的目錄結構..."
+mkdir -p data/node1/logs data/node2/logs data/node3/logs
+echo "✅ 日誌目錄結構已創建"
+echo ""
+
 # 顏色定義
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -107,7 +113,6 @@ test_nats_node "3" "8224"
 test_service "NATS Surveyor" "http://localhost:7777/metrics" 20
 test_service "NATS Exporter" "http://localhost:7778/metrics" 15
 test_service "Prometheus" "http://localhost:9090/-/healthy" 20
-test_service "Loki" "http://localhost:3100/ready" 20
 test_service "Grafana" "http://localhost:3000/api/health" 25
 
 # 7. 測試 NATS 連接
@@ -135,13 +140,6 @@ fi
 
 # 8. 檢查日誌錯誤
 echo -e "${BLUE}8. 檢查最近的錯誤日誌...${NC}"
-
-echo -e "${YELLOW}檢查 Loki 日誌...${NC}"
-if docker compose logs loki --tail=5 | grep -i "error\|failed"; then
-    echo -e "${RED}⚠️  Loki 仍有錯誤日誌${NC}"
-else
-    echo -e "${GREEN}✅ Loki 日誌正常${NC}"
-fi
 
 echo -e "${YELLOW}檢查 NATS Surveyor 日誌...${NC}"
 if docker compose logs nats-surveyor --tail=5 | grep -i "expected.*servers\|timeout\|failed\|error"; then

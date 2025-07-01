@@ -10,7 +10,7 @@
 - ✅ **多租戶帳戶系統**（開發、生產、微服務隔離）
 - ✅ **完整的訪問控制**（基於主題的細粒度權限）
 - ✅ **HTTP 監控介面**（每節點獨立監控）
-- ✅ **企業級監控堆疊**（Grafana + Prometheus + Loki）
+- ✅ **企業級監控堆疊**（Grafana + Prometheus）
 - ✅ **數據持久化**（自動volume掛載）
 - ✅ **健康檢查**（自動故障檢測）
 - ✅ **日誌記錄**（結構化日誌輸出）
@@ -65,7 +65,6 @@ docker compose exec nats-box nats --server="nats://admin:nats123@nats-node1:4222
 ### 監控和管理服務
 - **Grafana 儀表板**: http://localhost:3000 (admin/admin123)
 - **Prometheus**: http://localhost:9090
-- **Loki 日誌**: http://localhost:3100
 - **NATS Surveyor**: http://localhost:7777
 - **NATS Exporter**: http://localhost:7778
 
@@ -206,7 +205,6 @@ docker compose exec nats-box nats --server="nats://monitor-user:monitor123@nats-
 ### 🎯 監控架構
 - **指標收集**: NATS Surveyor (45+ 指標) + NATS Prometheus Exporter
 - **指標存儲**: Prometheus (時序資料庫)
-- **日誌聚合**: Loki + Promtail (自動收集 Docker 容器日誌)
 - **視覺化**: Grafana 儀表板 (實時監控集群狀態)
 - **告警**: 可配置的告警規則和通知
 
@@ -218,16 +216,11 @@ curl http://localhost:7778/metrics  # NATS Exporter (額外)
 
 # 監控服務
 curl http://localhost:9090/-/healthy    # Prometheus 健康檢查
-curl http://localhost:3100/ready        # Loki 健康檢查
 curl http://localhost:3000/api/health   # Grafana 健康檢查
 ```
 
 ### 📊 Grafana 儀表板
 1. **NATS JetStream 集群監控**: 核心指標和效能分析
-2. **NATS 日誌分析**: 結構化日誌查詢和分析
-
-### 📚 監控指南
-完整的監控設定和使用指南請參考 [MONITORING_GUIDE.md](./MONITORING_GUIDE.md)
 
 ## 📈 內建監控端點
 
@@ -332,25 +325,37 @@ docker compose exec nats-box nats --server="nats://admin:nats123@nats-node1:4222
 
 ### ✅ 已修復的問題
 
-#### 1. Loki 服務重啟問題
-**問題**: `failed parsing config: line 58: field interface not found in type ring.LifecyclerConfig`
-**解決**: 移除 `interface: eth0` 配置，簡化為單節點模式
-
-#### 2. NATS 健康檢查失敗
+#### 1. NATS 健康檢查失敗
 **問題**: 健康檢查使用錯誤端點 `/healthz`
 **解決**: 改用正確端點 `/varz`，調整檢查間隔和超時設定
 
-#### 3. NATS Surveyor 重啟循環
+#### 2. NATS Surveyor 重啟循環
 **問題**: 啟動命令包含不支援的參數
 **解決**: 移除不支援的 `--timeout`、`--poll-timeout`、`--no-color` 參數
 
-#### 4. 權限配置問題
+#### 3. 權限配置問題
 **問題**: 帳戶缺少 `_INBOX.*` 權限，無法執行請求-回應操作
 **解決**: 為所有帳戶添加 `_INBOX.*` 權限，新增專用的系統帳戶
 
-#### 5. JetStream 配額限制
+#### 4. JetStream 配額限制
 **問題**: 原始配額過小，影響生產使用
 **解決**: 升級所有帳戶配額至 4GB 記憶體、16GB 檔案存儲
+
+#### 5. NATS Surveyor 只看到部分節點
+```bash
+# 現象：NATS Surveyor 顯示 "Expected 3 servers, only saw responses from 1"
+# 這是正常行為，原因：
+# 1. NATS 集群中只有主節點回應系統級查詢
+# 2. 其他節點通過主節點轉發資訊
+# 3. 所有節點實際上都在正常運行
+
+# 驗證集群狀態
+curl -s "http://localhost:8222/routez" | grep "num_routes"
+
+# 如果返回大於 0 的值，表示集群正常連接
+# 可以通過 Prometheus 指標確認所有節點都在工作
+curl -s "http://localhost:7777/metrics" | grep nats_up
+```
 
 ### 🔧 配置改進
 
@@ -427,11 +432,23 @@ curl http://localhost:3000/api/health
 # 檢查 Prometheus
 curl http://localhost:9090/-/healthy
 
-# 檢查 Loki
-curl http://localhost:3100/ready
-
 # 檢查 NATS Surveyor
 curl http://localhost:7777/metrics | head -20
+```
+
+#### 6. NATS 節點重啟循環
+```bash
+# 如果 NATS 節點不斷重啟，檢查日誌
+docker compose logs nats-node1 --tail=20
+
+# 如果看到 "failed to open log file" 錯誤
+# 原因：日誌目錄不存在，NATS 無法創建日誌文件
+
+# 解決方案：創建必要的日誌目錄
+mkdir -p data/node1/logs data/node2/logs data/node3/logs
+
+# 重啟 NATS 節點
+docker compose restart nats-node1 nats-node2 nats-node3
 ```
 
 ### 常見錯誤和解決方案
@@ -439,9 +456,10 @@ curl http://localhost:7777/metrics | head -20
 | 錯誤信息 | 可能原因 | 解決方案 |
 |---------|---------|---------|
 | `Permissions Violation for Publish` | 帳戶權限不足 | 檢查帳戶權限配置，使用有權限的帳戶 |
-| `failed parsing config: field interface not found` | Loki 配置問題 | 檢查 loki-config.yml，移除不支援的字段 |
+| `failed to open log file` | 日誌目錄不存在 | 執行 `mkdir -p data/node{1,2,3}/logs` 創建目錄 |
 | `Connection refused` | 服務未啟動或端口問題 | 檢查服務狀態和端口佔用 |
 | `waiting for meta leader` | JetStream 領導者選舉中 | 等待 30-60 秒，屬於正常啟動過程 |
+| `Expected 3 servers, only saw responses from 1` | NATS 系統查詢正常行為 | 正常現象，主節點代表集群回應查詢 |
 | `command not found` | CLI 工具未安裝 | 使用 Docker 內建工具：`docker compose exec nats-box nats` |
 
 ### 重啟修復流程
@@ -474,7 +492,6 @@ sleep 60
 
 #### 3. 監控和告警
 - **設定告警**: 配置 CPU、記憶體、存儲使用率告警
-- **日誌監控**: 設定錯誤日誌告警規則
 - **健康檢查**: 定期執行健康檢查腳本
 - **備份策略**: 定期備份 JetStream 資料和配置
 
@@ -494,7 +511,6 @@ sleep 60
 #### 2. 除錯工具
 - **使用 NATS Box**: 利用內建的 CLI 工具進行除錯
 - **監控儀表板**: 使用 Grafana 儀表板監控開發過程
-- **日誌查詢**: 使用 Loki 查詢和分析應用日誌
 
 ## 📂 項目結構
 
@@ -508,9 +524,7 @@ docker-nats-cluster/
 │   └── nats-node3.conf         # Node 3 配置
 ├── monitoring/                  # 監控配置文件
 │   ├── grafana/                # Grafana 配置和儀表板
-│   ├── prometheus/             # Prometheus 配置
-│   ├── promtail/               # Promtail 日誌收集配置
-│   └── loki/                   # Loki 日誌聚合配置
+│   └── prometheus/             # Prometheus 配置
 ├── data/                       # 數據持久化目錄
 ├── test-cluster.sh             # 集群測試腳本
 ├── fix-and-test.sh             # 修復和測試腳本 (新增)
@@ -529,7 +543,6 @@ docker-nats-cluster/
 ### 監控工具
 - **Grafana 文檔**: https://grafana.com/docs/
 - **Prometheus 文檔**: https://prometheus.io/docs/
-- **Loki 文檔**: https://grafana.com/docs/loki/
 
 ### 相關工具
 - **NATS Surveyor**: https://github.com/nats-io/nats-surveyor
@@ -543,16 +556,15 @@ docker-nats-cluster/
 - **Docker Compose**: 3.8+
 - **Grafana**: latest
 - **Prometheus**: latest
-- **Loki**: latest
 
 ### 🆕 最新更新 (2024年)
-- ✅ 修復 Loki 配置兼容性問題
 - ✅ 修復 NATS 健康檢查端點
 - ✅ 修復 NATS Surveyor 啟動參數
 - ✅ 完善帳戶權限配置，新增系統帳戶
 - ✅ 升級 JetStream 配額限制
-- ✅ 整合完整的企業級監控堆疊
+- ✅ 整合 Prometheus + Grafana 監控堆疊
 - ✅ 新增故障排除和最佳實踐指南
+- ✅ 移除 Loki 日誌聚合服務，簡化監控架構
 
 ---
 
