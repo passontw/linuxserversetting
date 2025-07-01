@@ -45,6 +45,11 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo -e "${YELLOW}清理數據目錄...${NC}"
     sudo rm -rf data/
     docker volume rm $(docker volume ls -q | grep nats) 2>/dev/null || true
+    
+    # 立即重新創建日誌目錄 (重要！)
+    echo -e "${BLUE}重新創建日誌目錄...${NC}"
+    mkdir -p data/node1/logs data/node2/logs data/node3/logs
+    echo -e "${GREEN}✅ 日誌目錄已重新創建${NC}"
 fi
 
 # 3. 重新啟動服務
