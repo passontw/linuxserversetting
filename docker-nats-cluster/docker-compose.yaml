@@ -17,11 +17,11 @@ services:
       - nats-cluster-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8222/healthz"]
-      interval: 10s
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8222/varz"]
+      interval: 15s
       timeout: 5s
       retries: 3
-      start_period: 10s
+      start_period: 30s
 
   # NATS Node 2  
   nats-node2:
@@ -43,11 +43,11 @@ services:
     depends_on:
       - nats-node1
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8222/healthz"]
-      interval: 10s
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8222/varz"]
+      interval: 15s
       timeout: 5s
       retries: 3
-      start_period: 15s
+      start_period: 45s
 
   # NATS Node 3
   nats-node3:
@@ -70,11 +70,11 @@ services:
       - nats-node1
       - nats-node2
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8222/healthz"]
-      interval: 10s
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8222/varz"]
+      interval: 15s
       timeout: 5s
       retries: 3
-      start_period: 20s
+      start_period: 60s
 
   # NATS Surveyor - Web UI for monitoring and management (也是 Prometheus Exporter)
   nats-surveyor:
@@ -84,9 +84,9 @@ services:
     ports:
       - "7777:7777"
     environment:
-      - NATS_SURVEYOR_SERVERS=nats://admin:nats123@nats-node1:4222,nats://admin:nats123@nats-node2:4222,nats://admin:nats123@nats-node3:4222
+      - NATS_SURVEYOR_SERVERS=nats://monitor-user:monitor123@nats-node1:4222,nats://monitor-user:monitor123@nats-node2:4222,nats://monitor-user:monitor123@nats-node3:4222
     command: [
-      "--servers", "nats://admin:nats123@nats-node1:4222,nats://admin:nats123@nats-node2:4222,nats://admin:nats123@nats-node3:4222",
+      "--servers", "nats://monitor-user:monitor123@nats-node1:4222,nats://monitor-user:monitor123@nats-node2:4222,nats://monitor-user:monitor123@nats-node3:4222",
       "--port", "7777",
       "--addr", "0.0.0.0",
       "--count", "3",
@@ -208,10 +208,18 @@ services:
     volumes:
       - ./monitoring/loki:/etc/loki:ro
       - loki-data:/tmp/loki
+    environment:
+      - LOKI_CONFIG_FILE=/etc/loki/loki-config.yml
     command: -config.file=/etc/loki/loki-config.yml
     networks:
       - nats-cluster-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3100/ready"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
   # Promtail - 日誌收集代理
   promtail:
