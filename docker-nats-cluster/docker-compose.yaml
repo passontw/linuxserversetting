@@ -12,7 +12,7 @@ services:
       - ./config/nats-node1.conf:/nats-server.conf:ro
       - ./config/accounts.conf:/accounts.conf:ro
       - ./data/node1:/data
-    command: ["-c", "/nats-server.conf"]
+    command: ["sh", "-c", "mkdir -p /data/logs && nats-server -c /nats-server.conf"]
     networks:
       - nats-cluster-network
     restart: unless-stopped
@@ -36,7 +36,7 @@ services:
       - ./config/nats-node2.conf:/nats-server.conf:ro
       - ./config/accounts.conf:/accounts.conf:ro
       - ./data/node2:/data
-    command: ["-c", "/nats-server.conf"]
+    command: ["sh", "-c", "mkdir -p /data/logs && nats-server -c /nats-server.conf"]
     networks:
       - nats-cluster-network
     restart: unless-stopped  
@@ -62,7 +62,7 @@ services:
       - ./config/nats-node3.conf:/nats-server.conf:ro
       - ./config/accounts.conf:/accounts.conf:ro
       - ./data/node3:/data
-    command: ["-c", "/nats-server.conf"]
+    command: ["sh", "-c", "mkdir -p /data/logs && nats-server -c /nats-server.conf"]
     networks:
       - nats-cluster-network
     restart: unless-stopped

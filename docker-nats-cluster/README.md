@@ -6,7 +6,7 @@
 
 本項目提供了一個生產就緒的 NATS JetStream 3節點集群配置，包含：
 
-- ✅ **3節點 NATS JetStream 集群**（每節點16GB存儲）
+- ✅ **3節點 NATS JetStream 集群**（每節點4GB存儲）
 - ✅ **多租戶帳戶系統**（開發、生產、微服務隔離）
 - ✅ **完整的訪問控制**（基於主題的細粒度權限）
 - ✅ **HTTP 監控介面**（每節點獨立監控）
@@ -17,7 +17,14 @@
 
 ## 🚀 快速開始
 
-### 1. 啟動集群
+### 1. 初始化數據目錄
+
+```bash
+# 創建必要的數據目錄結構
+./init-data-dirs.sh
+```
+
+### 2. 啟動集群
 
 ```bash
 # 啟動服務
@@ -27,7 +34,7 @@ docker compose up -d
 docker compose ps
 ```
 
-### 2. 驗證部署
+### 3. 驗證部署
 
 ```bash
 # 運行測試腳本
@@ -37,7 +44,7 @@ docker compose ps
 ./fix-and-test.sh
 ```
 
-### 3. 連接到集群
+### 4. 連接到集群
 
 ```bash
 # 使用管理員帳戶連接（需要安裝 nats CLI）
@@ -90,7 +97,7 @@ curl http://localhost:8224/varz   # Node 3
 用戶: admin
 密碼: nats123
 權限: 完整存取權限 (所有主題)
-JetStream 配額: 4GB 記憶體, 16GB 檔案, 1000 流, 10000 消費者
+JetStream 配額: 1GB 記憶體, 4GB 檔案, 1000 流, 10000 消費者
 ```
 
 ### 開發環境帳戶 (DEV)
@@ -98,7 +105,7 @@ JetStream 配額: 4GB 記憶體, 16GB 檔案, 1000 流, 10000 消費者
 用戶: dev-user
 密碼: dev123
 權限: dev.*, logs.dev.*, metrics.dev.*
-JetStream 配額: 4GB 記憶體, 16GB 檔案, 1000 流, 10000 消費者
+JetStream 配額: 1GB 記憶體, 4GB 檔案, 1000 流, 10000 消費者
 ```
 
 ### 生產環境帳戶 (PROD)
@@ -106,7 +113,7 @@ JetStream 配額: 4GB 記憶體, 16GB 檔案, 1000 流, 10000 消費者
 用戶: prod-user
 密碼: prod456
 權限: prod.*, logs.prod.*, metrics.prod.*, alerts.*
-JetStream 配額: 4GB 記憶體, 16GB 檔案, 1000 流, 10000 消費者
+JetStream 配額: 1GB 記憶體, 4GB 檔案, 1000 流, 10000 消費者
 ```
 
 ### 監控帳戶 (MONITORING) - 監控系統專用
@@ -115,7 +122,7 @@ JetStream 配額: 4GB 記憶體, 16GB 檔案, 1000 流, 10000 消費者
 密碼: monitor123
 權限: 所有主題 (>), 系統主題 ($SYS.>), 系統請求 ($SYS.REQ.>)
 用途: Prometheus 監控、日誌收集、健康檢查
-JetStream 配額: 4GB 記憶體, 16GB 檔案, 1000 流, 10000 消費者
+JetStream 配額: 1GB 記憶體, 4GB 檔案, 1000 流, 10000 消費者
 ```
 
 ### 微服務帳戶範例 (SERVICES)
@@ -144,12 +151,12 @@ JetStream 配額: 4GB 記憶體, 16GB 檔案, 1000 流, 10000 消費者
 ## 📊 JetStream 配置
 
 每個節點配置：
-- **記憶體存儲**: 4GB (已升級)
-- **檔案存儲**: 16GB (已升級)  
+- **記憶體存儲**: 1GB
+- **檔案存儲**: 4GB  
 - **集群域**: nats-cluster
 - **複製因子**: 3 (高可用性)
-- **最大流數**: 1000 (已升級)
-- **最大消費者數**: 10000 (已升級)
+- **最大流數**: 1000
+- **最大消費者數**: 10000
 
 ## 🔧 常用命令
 
@@ -198,376 +205,282 @@ docker compose exec nats-box nats --server="nats://admin:nats123@nats-node1:4222
 docker compose exec nats-box nats --server="nats://monitor-user:monitor123@nats-node1:4222" server info
 ```
 
-## 📈 完整監控解決方案
-
-本項目整合了企業級的 NATS JetStream 監控堆疊：
-
-### 🎯 監控架構
-- **指標收集**: NATS Surveyor (45+ 指標) + NATS Prometheus Exporter
-- **指標存儲**: Prometheus (時序資料庫)
-- **視覺化**: Grafana 儀表板 (實時監控集群狀態)
-- **告警**: 可配置的告警規則和通知
-
-### 🚀 監控端點
-```bash
-# Prometheus 指標
-curl http://localhost:7777/metrics  # NATS Surveyor (主要)
-curl http://localhost:7778/metrics  # NATS Exporter (額外)
-
-# 監控服務
-curl http://localhost:9090/-/healthy    # Prometheus 健康檢查
-curl http://localhost:3000/api/health   # Grafana 健康檢查
-```
-
-### 📊 Grafana 儀表板
-1. **NATS JetStream 集群監控**: 核心指標和效能分析
-
-## 📈 內建監控端點
-
-### NATS 服務器端點
-```bash
-# 服務器資訊
-curl http://localhost:8222/varz
-
-# 連接資訊  
-curl http://localhost:8222/connz
-
-# JetStream 資訊
-curl http://localhost:8222/jsz
-
-# 集群路由資訊
-curl http://localhost:8222/routez
-
-# 帳戶資訊
-curl http://localhost:8222/accountz
-```
-
-### Prometheus 監控配置
-本項目包含兩個 Prometheus Exporter：
-
-**1. NATS Surveyor (端口 7777)**
-```bash
-# 查看可用指標
-curl http://localhost:7777/metrics
-
-# 指標涵蓋：帳戶統計、連接數、JetStream 資訊等
-# 可用指標數量：約 45 個指標組
-```
-
-**2. NATS Prometheus Exporter (端口 7778)**  
-```bash
-# 查看額外指標
-curl http://localhost:7778/metrics
-
-# 指標涵蓋：連接詳情、路由資訊、訂閱統計等
-```
-
-**Prometheus 配置範例**
-```yaml
-# prometheus.yml
-scrape_configs:
-  - job_name: 'nats-surveyor'
-    static_configs:
-      - targets: ['localhost:7777']
-    metrics_path: '/metrics'
-    scrape_interval: 30s
-
-  - job_name: 'nats-exporter'
-    static_configs:
-      - targets: ['localhost:7778']
-    metrics_path: '/metrics'
-    scrape_interval: 30s
-```
-
-## 🔧 管理工具
-
-### NATS Box CLI 工具
-本項目包含 NATS Box 容器，提供完整的 NATS 管理工具：
-
-```bash
-# 基本連接測試
-docker compose exec nats-box nats --server="nats://admin:nats123@nats-node1:4222" pub test.hello "Hello NATS"
-
-# 查看可用命令
-docker compose exec nats-box nats --help
-
-# 使用 NATS Top 監控
-docker compose exec nats-box nats-top --server="nats://admin:nats123@nats-node1:4222"
-
-# 效能測試
-docker compose exec nats-box nats-bench --server="nats://admin:nats123@nats-node1:4222" test.bench
-```
-
-### JetStream 管理
-```bash
-# 創建 Stream
-docker compose exec nats-box nats --server="nats://admin:nats123@nats-node1:4222" \
-  stream create ORDERS --subjects "orders.*" --storage file --replicas 3
-
-# 創建 Consumer  
-docker compose exec nats-box nats --server="nats://admin:nats123@nats-node1:4222" \
-  consumer create ORDERS ORDER_PROCESSOR --pull --deliver all
-
-# 發布訊息到 Stream
-docker compose exec nats-box nats --server="nats://admin:nats123@nats-node1:4222" \
-  pub orders.created '{"order_id": "12345", "amount": 99.99}'
-
-# 查看 Stream 列表
-docker compose exec nats-box nats --server="nats://admin:nats123@nats-node1:4222" stream ls
-
-# 查看 Consumer 資訊
-docker compose exec nats-box nats --server="nats://admin:nats123@nats-node1:4222" consumer info ORDERS ORDER_PROCESSOR
-```
-
-## 🚨 重要修復記錄
-
-本項目已解決以下關鍵問題，確保生產環境穩定性：
-
-### ✅ 已修復的問題
-
-#### 1. NATS 健康檢查失敗
-**問題**: 健康檢查使用錯誤端點 `/healthz`
-**解決**: 改用正確端點 `/varz`，調整檢查間隔和超時設定
-
-#### 2. NATS Surveyor 重啟循環
-**問題**: 啟動命令包含不支援的參數
-**解決**: 移除不支援的 `--timeout`、`--poll-timeout`、`--no-color` 參數
-
-#### 3. 權限配置問題
-**問題**: 帳戶缺少 `_INBOX.*` 權限，無法執行請求-回應操作
-**解決**: 為所有帳戶添加 `_INBOX.*` 權限，新增專用的系統帳戶
-
-#### 4. JetStream 配額限制
-**問題**: 原始配額過小，影響生產使用
-**解決**: 升級所有帳戶配額至 4GB 記憶體、16GB 檔案存儲
-
-#### 5. NATS Surveyor 只看到部分節點
-```bash
-# 現象：NATS Surveyor 顯示 "Expected 3 servers, only saw responses from 1"
-# 這是正常行為，原因：
-# 1. NATS 集群中只有主節點回應系統級查詢
-# 2. 其他節點通過主節點轉發資訊
-# 3. 所有節點實際上都在正常運行
-
-# 驗證集群狀態
-curl -s "http://localhost:8222/routez" | grep "num_routes"
-
-# 如果返回大於 0 的值，表示集群正常連接
-# 可以通過 Prometheus 指標確認所有節點都在工作
-curl -s "http://localhost:7777/metrics" | grep nats_up
-```
-
-### 🔧 配置改進
-
-#### 系統帳戶分離
-- 新增專用的 SYS 帳戶用於系統管理
-- 分離監控帳戶，避免權限混亂
-- 確保請求-回應模式正常工作
-
-#### 監控架構完善
-- 整合 Grafana + Prometheus + Loki 完整監控堆疊
-- 自動日誌收集和分析
-- 實時指標監控和告警
-
 ## 🛠️ 故障排除
 
-### 常見問題診斷
+### 常見問題
 
-#### 1. 服務無法啟動
+#### 1. 日誌目錄錯誤
+**錯誤訊息**: `error opening file: open /data/logs/nats-node*.log: no such file or directory`
+
+**解決方案**:
 ```bash
-# 檢查服務狀態
-docker compose ps
+# 運行初始化腳本
+./init-data-dirs.sh
 
-# 查看服務日誌
-docker compose logs [service-name] --tail=50
-
-# 檢查端口佔用
-netstat -tlnp | grep -E "4222|4223|4224|8222|8223|8224"
-```
-
-#### 2. NATS 節點連接問題
-```bash
-# 檢查節點健康狀態
-curl http://localhost:8222/varz
-curl http://localhost:8223/varz
-curl http://localhost:8224/varz
-
-# 檢查集群路由
-curl http://localhost:8222/routez | jq '.routes | length'
-
-# 測試帳戶連接
-docker compose exec nats-box nats --server="nats://admin:nats123@nats-node1:4222" server info
-```
-
-#### 3. JetStream 問題
-```bash
-# 檢查 JetStream 狀態
-curl http://localhost:8222/jsz
-
-# 如果顯示 "等待 meta leader 選舉"
-# ✅ 正常現象，集群啟動需要選舉 leader
-# ⏱️ 通常在 30-60 秒內完成
-
-# 檢查 JetStream 配置
-docker compose exec nats-box nats --server="nats://admin:nats123@nats-node1:4222" server report jetstream
-```
-
-#### 4. 權限被拒絕
-```bash
-# 檢查帳戶權限
-curl http://localhost:8222/accountz
-
-# 確認使用正確的帳戶和密碼
-# 檢查主題權限是否符合帳戶配置
-
-# 系統級操作使用系統帳戶
-docker compose exec nats-box nats --server="nats://sys-user:sys123@nats-node1:4222" server info
-```
-
-#### 5. 監控服務問題
-```bash
-# 檢查 Grafana
-curl http://localhost:3000/api/health
-
-# 檢查 Prometheus
-curl http://localhost:9090/-/healthy
-
-# 檢查 NATS Surveyor
-curl http://localhost:7777/metrics | head -20
-```
-
-#### 6. NATS 節點重啟循環
-```bash
-# 如果 NATS 節點不斷重啟，檢查日誌
-docker compose logs nats-node1 --tail=20
-
-# 如果看到 "failed to open log file" 錯誤
-# 原因：日誌目錄不存在，NATS 無法創建日誌文件
-
-# 解決方案：創建必要的日誌目錄
-mkdir -p data/node1/logs data/node2/logs data/node3/logs
-
-# 重啟 NATS 節點
-docker compose restart nats-node1 nats-node2 nats-node3
-```
-
-### 常見錯誤和解決方案
-
-| 錯誤信息 | 可能原因 | 解決方案 |
-|---------|---------|---------|
-| `Permissions Violation for Publish` | 帳戶權限不足 | 檢查帳戶權限配置，使用有權限的帳戶 |
-| `failed to open log file` | 日誌目錄不存在 | 執行 `mkdir -p data/node{1,2,3}/logs` 創建目錄 |
-| `Connection refused` | 服務未啟動或端口問題 | 檢查服務狀態和端口佔用 |
-| `waiting for meta leader` | JetStream 領導者選舉中 | 等待 30-60 秒，屬於正常啟動過程 |
-| `Expected 3 servers, only saw responses from 1` | NATS 系統查詢正常行為 | 正常現象，主節點代表集群回應查詢 |
-| `command not found` | CLI 工具未安裝 | 使用 Docker 內建工具：`docker compose exec nats-box nats` |
-
-### 重啟修復流程
-```bash
-# 完整重啟修復流程
-./fix-and-test.sh
-
-# 或手動執行
+# 重新啟動服務
 docker compose down
 docker compose up -d
-sleep 60
-./test-cluster.sh
 ```
 
-## 🎯 最佳實踐
+#### 2. 集群節點無法連接
+**檢查步驟**:
+```bash
+# 檢查容器狀態
+docker compose ps
 
-### 生產環境建議
+# 檢查節點日誌
+docker compose logs nats-node1
+docker compose logs nats-node2
+docker compose logs nats-node3
 
-#### 1. 安全性
-- **修改預設密碼**: 更改所有預設帳戶密碼
-- **限制網路存取**: 使用防火牆限制 NATS 和監控端口存取
-- **TLS 加密**: 啟用 TLS 加密客戶端連接
-- **定期更新**: 保持 NATS 和監控組件最新版本
-
-#### 2. 資源管理
-- **記憶體監控**: 監控 JetStream 記憶體使用率，超過 80% 時擴容
-- **存儲管理**: 定期清理舊的 Stream 和日誌檔案
-- **連接限制**: 監控連接數，超過 1000 時考慮負載均衡
-- **配額調整**: 根據實際使用情況調整 JetStream 配額
-
-#### 3. 監控和告警
-- **設定告警**: 配置 CPU、記憶體、存儲使用率告警
-- **健康檢查**: 定期執行健康檢查腳本
-- **備份策略**: 定期備份 JetStream 資料和配置
-
-#### 4. 效能優化
-- **連接池**: 客戶端使用連接池減少連接開銷
-- **批次處理**: 使用批次發布提高吞吐量
-- **適當複製**: 根據重要性選擇合適的複製因子
-- **主題設計**: 合理設計主題結構避免權限複雜化
-
-### 開發環境建議
-
-#### 1. 帳戶分離
-- **環境隔離**: 開發、測試、生產使用不同帳戶
-- **權限最小化**: 只授予必要的主題權限
-- **測試帳戶**: 使用專門的測試帳戶進行開發
-
-#### 2. 除錯工具
-- **使用 NATS Box**: 利用內建的 CLI 工具進行除錯
-- **監控儀表板**: 使用 Grafana 儀表板監控開發過程
-
-## 📂 項目結構
-
-```
-docker-nats-cluster/
-├── docker-compose.yaml          # Docker Compose 配置
-├── config/                      # NATS 配置文件
-│   ├── accounts.conf           # 帳戶與權限配置 (已更新)
-│   ├── nats-node1.conf         # Node 1 配置
-│   ├── nats-node2.conf         # Node 2 配置
-│   └── nats-node3.conf         # Node 3 配置
-├── monitoring/                  # 監控配置文件
-│   ├── grafana/                # Grafana 配置和儀表板
-│   └── prometheus/             # Prometheus 配置
-├── data/                       # 數據持久化目錄
-├── test-cluster.sh             # 集群測試腳本
-├── fix-and-test.sh             # 修復和測試腳本 (新增)
-├── MONITORING_GUIDE.md         # 監控使用指南 (新增)
-└── README.md                   # 本文檔 (已更新)
+# 檢查集群狀態
+curl -s http://localhost:8222/varz | jq '.cluster'
 ```
 
-## 🔗 相關資源
+#### 3. JetStream 功能異常
+**檢查步驟**:
+```bash
+# 檢查 JetStream 狀態
+curl -s http://localhost:8222/jsz | jq '.meta_cluster'
 
-### 官方文檔
-- **NATS 官方文檔**: https://docs.nats.io/
-- **JetStream 指南**: https://docs.nats.io/nats-concepts/jetstream
-- **NATS CLI 工具**: https://github.com/nats-io/natscli
-- **NATS 監控**: https://docs.nats.io/running-a-nats-service/nats_admin/monitoring
+# 檢查 stream 創建
+docker compose exec nats-box nats stream list
 
-### 監控工具
-- **Grafana 文檔**: https://grafana.com/docs/
-- **Prometheus 文檔**: https://prometheus.io/docs/
+# 測試 JetStream 功能
+docker compose exec nats-box nats stream add test-stream --subjects "test.*" --storage memory --replicas 3 --defaults
+```
 
-### 相關工具
-- **NATS Surveyor**: https://github.com/nats-io/nats-surveyor
-- **NATS Prometheus Exporter**: https://github.com/nats-io/prometheus-nats-exporter
-- **NATS Top**: https://github.com/nats-io/nats-top
-- **NATS Bench**: https://github.com/nats-io/nats.go
+#### 4. 監控服務無法訪問
+**檢查步驟**:
+```bash
+# 檢查 Prometheus 狀態
+curl -s http://localhost:9090/-/healthy
 
-## 📝 版本資訊與更新記錄
+# 檢查 Grafana 狀態
+curl -s http://localhost:3000/api/health
 
-- **NATS Server**: 2.10-alpine
-- **Docker Compose**: 3.8+
-- **Grafana**: latest
-- **Prometheus**: latest
+# 檢查 NATS Surveyor
+curl -s http://localhost:7777/metrics
+```
 
-### 🆕 最新更新 (2024年)
-- ✅ 修復 NATS 健康檢查端點
-- ✅ 修復 NATS Surveyor 啟動參數
-- ✅ 完善帳戶權限配置，新增系統帳戶
-- ✅ 升級 JetStream 配額限制
-- ✅ 整合 Prometheus + Grafana 監控堆疊
-- ✅ 新增故障排除和最佳實踐指南
-- ✅ 移除 Loki 日誌聚合服務，簡化監控架構
+### 日誌檢查
 
----
+#### 查看特定節點日誌
+```bash
+# 查看 Node 1 日誌
+docker compose logs nats-node1 -f
 
-**🎉 享受高效能的 NATS JetStream 消息傳遞體驗！**
+# 查看本地日誌文件
+tail -f data/node1/logs/nats-node1.log
+```
 
-如有問題，請查看故障排除章節或執行 `./fix-and-test.sh` 腳本進行診斷。
+#### 查看所有服務日誌
+```bash
+# 查看所有服務日誌
+docker compose logs -f
+
+# 查看特定服務的錯誤日誌
+docker compose logs nats-node1 | grep ERROR
+```
+
+### 性能調優
+
+#### 記憶體使用優化
+```bash
+# 檢查記憶體使用情況
+curl -s http://localhost:8222/varz | jq '.mem'
+
+# 檢查 JetStream 記憶體使用
+curl -s http://localhost:8222/jsz | jq '.memory'
+```
+
+#### 連接數監控
+```bash
+# 檢查當前連接數
+curl -s http://localhost:8222/connz | jq '.connections | length'
+
+# 檢查連接詳細信息
+curl -s http://localhost:8222/connz | jq '.connections[] | {id, ip, port, subscriptions}'
+```
+
+## 📈 監控和儀表板
+
+### Grafana 儀表板
+
+訪問 http://localhost:3000 (admin/admin123) 查看以下儀表板：
+
+1. **NATS Overview** - 集群概覽
+2. **NATS Servers** - 服務器詳細信息
+3. **JetStream Dashboard** - JetStream 監控
+4. **NATS Surveyor** - 集群調查器
+5. **Prometheus Exporter** - 指標導出器
+
+### Prometheus 指標
+
+主要指標端點：
+- **NATS Surveyor**: http://localhost:7777/metrics
+- **NATS Exporter**: http://localhost:7778/metrics
+
+關鍵指標：
+- `nats_core_mem_bytes` - 記憶體使用
+- `nats_core_conn_count` - 連接數
+- `nats_core_sub_count` - 訂閱數
+- `nats_jetstream_messages_total` - JetStream 消息數
+
+## 🔒 安全配置
+
+### 集群認證
+```bash
+# 集群節點間認證
+cluster_user: cluster_pass_123
+```
+
+### 客戶端認證
+```bash
+# 使用帳戶密碼連接
+nats://username:password@localhost:4222
+
+# 使用 TLS 連接（需要配置證書）
+nats://localhost:4222?tls=true
+```
+
+### 權限控制
+```bash
+# 檢查帳戶權限
+curl -s http://localhost:8222/accountz | jq '.accounts[] | {name, imports, exports}'
+```
+
+## 📝 開發指南
+
+### 客戶端連接示例
+
+#### Go 客戶端
+```go
+package main
+
+import (
+    "log"
+    "github.com/nats-io/nats.go"
+)
+
+func main() {
+    // 連接到集群
+    nc, err := nats.Connect("nats://admin:nats123@localhost:4222")
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer nc.Close()
+
+    // 發布消息
+    nc.Publish("test.subject", []byte("Hello NATS!"))
+
+    // 訂閱消息
+    nc.Subscribe("test.subject", func(msg *nats.Msg) {
+        log.Printf("收到消息: %s", string(msg.Data))
+    })
+
+    // 保持連接
+    select {}
+}
+```
+
+#### JavaScript 客戶端
+```javascript
+const nats = require('nats');
+
+// 連接到集群
+const nc = nats.connect({
+    servers: ['nats://admin:nats123@localhost:4222'],
+    user: 'admin',
+    pass: 'nats123'
+});
+
+// 發布消息
+nc.publish('test.subject', 'Hello NATS!');
+
+// 訂閱消息
+nc.subscribe('test.subject', (msg) => {
+    console.log('收到消息:', msg.data);
+});
+```
+
+### JetStream 使用示例
+
+#### 創建 Stream
+```bash
+# 創建持久化 stream
+docker compose exec nats-box nats stream add orders --subjects "orders.*" --storage file --replicas 3 --defaults
+
+# 創建記憶體 stream
+docker compose exec nats-box nats stream add events --subjects "events.*" --storage memory --replicas 3 --defaults
+```
+
+#### 發布到 Stream
+```bash
+# 發布消息到 stream
+docker compose exec nats-box nats pub orders.new "New order data"
+
+# 查看 stream 信息
+docker compose exec nats-box nats stream info orders
+```
+
+#### 創建 Consumer
+```bash
+# 創建 push consumer
+docker compose exec nats-box nats consumer add orders order-processor --defaults
+
+# 創建 pull consumer
+docker compose exec nats-box nats consumer add orders order-puller --pull --defaults
+```
+
+## 🚀 部署到生產環境
+
+### 環境變數配置
+```bash
+# 創建環境變數文件
+cat > .env << EOF
+NATS_CLUSTER_NAME=nats-cluster
+NATS_CLUSTER_PORT=6222
+NATS_CLIENT_PORT=4222
+NATS_MONITOR_PORT=8222
+JETSTREAM_MAX_MEMORY=1GB
+JETSTREAM_MAX_STORAGE=4GB
+EOF
+```
+
+### 健康檢查配置
+```bash
+# 添加到 docker-compose.yaml
+healthcheck:
+  test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8222/varz"]
+  interval: 15s
+  timeout: 5s
+  retries: 3
+  start_period: 30s
+```
+
+### 日誌配置
+```bash
+# 配置日誌輪轉
+log_file: "/data/logs/nats-node1.log"
+log_size_limit: 100MB
+debug: false
+trace: false
+logtime: true
+```
+
+## 📚 參考資源
+
+- [NATS 官方文檔](https://docs.nats.io/)
+- [JetStream 指南](https://docs.nats.io/nats-concepts/jetstream)
+- [NATS CLI 工具](https://github.com/nats-io/natscli)
+- [NATS Surveyor](https://github.com/nats-io/nats-surveyor)
+- [Prometheus NATS Exporter](https://github.com/nats-io/prometheus-nats-exporter)
+
+## 🤝 貢獻
+
+歡迎提交 Issue 和 Pull Request 來改進這個項目！
+
+## 📄 授權
+
+本項目採用 MIT 授權條款。
