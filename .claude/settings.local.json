@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(kubectl get:*)",
+      "Bash(kubectl config:*)",
+      "Bash(ls:*)",
+      "Bash(cp:*)",
+      "Bash(docker:*)",
+      "Bash(/dev/null)",
+      "Bash(true)",
+      "Bash(chmod:*)",
+      "Bash(/Users/passonTomas/Projects/linuxserversetting/k8s/nats-cluster/deploy.sh:*)",
+      "Bash(/Users/passonTomas/Projects/linuxserversetting/k8s/nats-cluster/install-longhorn.sh)",
+      "Bash(kubectl apply:*)",
+      "Bash(helm install:*)",
+      "Bash(kubectl run:*)",
+      "Bash(kubectl exec:*)",
+      "Bash(kubectl logs:*)",
+      "Bash(mkdir:*)",
+      "Bash(kubectl patch:*)",
+      "Bash(kubectl top:*)",
+      "Bash(helm status:*)",
+      "Bash(helm uninstall:*)",
+      "Bash(helm show values:*)",
+      "Bash(/Users/passonTomas/Projects/linuxserversetting/k8s/redis-cluster/test-cluster.sh)",
+      "Bash(/Users/passonTomas/Projects/linuxserversetting/k8s/redis-cluster/test-external-connection.sh)",
+      "Bash(kubectl delete pod:*)",
+      "Bash(kubectl delete:*)",
+      "Bash(/Users/passonTomas/Projects/linuxserversetting/k8s/redis-cluster/simple-connection.sh)",
+      "Bash(rm:*)"
+    ],
+    "deny": []
+  }
+}

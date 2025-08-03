@@ -1,0 +1,161 @@
+# NATS Helm Chart Values Configuration
+# 測試環境 - 最小配置，支援動態擴展
+
+# 全局配置
+global:
+  # 啟用 JetStream
+  jetstream:
+    enabled: true
+    memStorage:
+      enabled: true
+      size: 1Gi
+    fileStorage:
+      enabled: true
+      size: 10Gi
+      storageClassName: "longhorn"
+
+# NATS 集群配置
+nats:
+  # 集群配置
+  cluster:
+    enabled: true
+    replicas: 3
+    # 集群名稱
+    name: "nats-cluster"
+    
+  # 認證配置
+  auth:
+    enabled: true
+    # 基本用戶認證
+    basic:
+      enabled: true
+      # 預設用戶配置
+      users:
+        - user: admin
+          password: "admin123"
+          permissions:
+            publish:
+              allow: [">"]
+            subscribe:
+              allow: [">"]
+        - user: user1
+          password: "user123"
+          permissions:
+            publish:
+              allow: ["app.>", "service.>"]
+            subscribe:
+              allow: ["app.>", "service.>"]
+        - user: readonly
+          password: "read123"
+          permissions:
+            subscribe:
+              allow: [">"]
+            publish:
+              deny: [">"]
+
+  # 服務配置
+  service:
+    # 內部服務
+    clusterIP:
+      enabled: true
+      port: 4222
+    # 外部服務 (NodePort)
+    nodePort:
+      enabled: true
+      port: 4222
+      nodePort: 30222
+    # 監控端口
+    monitor:
+      enabled: true
+      port: 8222
+      nodePort: 30822
+
+  # 資源配置 - 最小配置，支援動態擴展
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+
+  # 持久化存儲配置
+  persistence:
+    enabled: true
+    storageClassName: "longhorn"
+    size: 5Gi
+    accessMode: ReadWriteOnce
+
+  # JetStream 配置
+  jetstream:
+    enabled: true
+    # 記憶體存儲配置
+    memStorage:
+      enabled: true
+      size: 1Gi
+    # 檔案存儲配置
+    fileStorage:
+      enabled: true
+      size: 10Gi
+      storageClassName: "longhorn"
+
+  # 日誌配置
+  logging:
+    debug: false
+    trace: false
+    logtime: true
+
+  # 安全配置
+  securityContext:
+    enabled: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+
+  # 存活探針
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  # 就緒探針
+  readinessProbe:
+    enabled: true
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+# 配置映射
+config:
+  # 集群配置
+  cluster:
+    name: "nats-cluster"
+    port: 6222
+    listen: 0.0.0.0:6222
+    routes:
+      - nats://nats-0.nats-headless.nats.svc.cluster.local:6222
+      - nats://nats-1.nats-headless.nats.svc.cluster.local:6222
+      - nats://nats-2.nats-headless.nats.svc.cluster.local:6222
+
+  # JetStream 配置
+  jetstream:
+    domain: "nats-cluster"
+    store_dir: "/data/jetstream"
+    max_mem: 1Gi
+    max_file: 10Gi
+
+# 服務帳戶
+serviceAccount:
+  create: true
+  name: "nats"
+
+# Pod 安全策略
+podSecurityPolicy:
+  enabled: false
+
+# 網路策略
+networkPolicy:
+  enabled: false 

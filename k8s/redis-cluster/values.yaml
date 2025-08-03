@@ -1,0 +1,22 @@
+# Redis Cluster Helm Chart Values Configuration
+# 測試環境 - 基本配置
+
+# 認證配置
+auth:
+  enabled: true
+  password: "redis123"
+
+# 集群配置
+cluster:
+  nodes: 3
+  replicas: 0
+
+# 持久化存儲配置  
+persistence:
+  enabled: true
+  storageClass: "longhorn"
+  size: 2Gi
+
+# 監控配置 (測試環境停用)
+metrics:
+  enabled: false

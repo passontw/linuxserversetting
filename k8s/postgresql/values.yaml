@@ -1,0 +1,125 @@
+# PostgreSQL Helm Chart Values Configuration
+# 測試環境 - 最小資源配置，支援動態擴展
+
+# 全局配置
+global:
+  postgresql:
+    auth:
+      postgresPassword: "postgres123"
+      database: "testdb"
+  storageClass: "longhorn"
+
+# PostgreSQL 主配置
+postgresql:
+  # 認證配置
+  auth:
+    enablePostgresUser: true
+    postgresPassword: "postgres123"
+    database: "testdb"
+    
+  # 架構配置
+  architecture: standalone
+  
+  # 主實例配置
+  primary:
+    # 服務配置
+    service:
+      type: NodePort
+      ports:
+        postgresql: 5432
+      nodePorts:
+        postgresql: 30432
+    
+    # 持久化存儲配置
+    persistence:
+      enabled: true
+      storageClass: "longhorn"
+      size: 8Gi
+      accessModes:
+        - ReadWriteOnce
+    
+    # 資源配置 - 最小化配置
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 1Gi
+    
+    # Pod 安全上下文
+    podSecurityContext:
+      enabled: true
+      fsGroup: 1001
+    
+    containerSecurityContext:
+      enabled: true
+      runAsUser: 1001
+      runAsGroup: 1001
+      runAsNonRoot: true
+    
+    # 探針配置
+    livenessProbe:
+      enabled: true
+      initialDelaySeconds: 30
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 6
+      successThreshold: 1
+    
+    readinessProbe:
+      enabled: true
+      initialDelaySeconds: 5
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 6
+      successThreshold: 1
+    
+    # PostgreSQL 配置參數
+    extendedConfiguration: |
+      # 記憶體設定 (針對 1Gi 限制優化)
+      shared_buffers = 256MB
+      effective_cache_size = 768MB
+      work_mem = 4MB
+      maintenance_work_mem = 64MB
+      
+      # 連線設定
+      max_connections = 100
+      
+      # 日誌設定
+      log_statement = 'all'
+      log_min_duration_statement = 1000
+      
+      # 性能設定
+      random_page_cost = 1.1
+      effective_io_concurrency = 200
+      
+      # WAL 設定
+      wal_buffers = 16MB
+      max_wal_size = 1GB
+      min_wal_size = 80MB
+      
+    # 初始化配置
+    initdb:
+      args: "--encoding=UTF8 --locale=C"
+      
+# 監控配置
+metrics:
+  enabled: false
+
+# 服務帳戶
+serviceAccount:
+  create: true
+  name: "postgresql"
+
+# Pod 中斷預算
+podDisruptionBudget:
+  create: false
+
+# 網路策略
+networkPolicy:
+  enabled: false
+
+# 備份配置 (測試環境暫時停用)
+backup:
+  enabled: false
