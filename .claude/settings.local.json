@@ -27,7 +27,12 @@
       "Bash(kubectl delete pod:*)",
       "Bash(kubectl delete:*)",
       "Bash(/Users/passonTomas/Projects/linuxserversetting/k8s/redis-cluster/simple-connection.sh)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(./deploy.sh)",
+      "Bash(/Users/passonTomas/Projects/linuxserversetting/k8s/postgresql/deploy.sh:*)",
+      "Bash(helm list:*)",
+      "Bash(/Users/passonTomas/Projects/linuxserversetting/k8s/postgresql/test-connection.sh)",
+      "Bash(/Users/passonTomas/Projects/linuxserversetting/k8s/redis-cluster/deploy.sh)"
     ],
     "deny": []
   }

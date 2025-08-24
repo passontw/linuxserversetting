@@ -76,7 +76,11 @@ add_helm_repo() {
 # 創建命名空間
 create_namespace() {
     print_info "創建 Redis Cluster 命名空間..."
-    kubectl apply -f namespace.yaml
+    
+    # 獲取腳本所在目錄
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    
+    kubectl apply -f "${SCRIPT_DIR}/namespace.yaml"
     print_success "命名空間已創建"
 }
 
@@ -84,11 +88,14 @@ create_namespace() {
 deploy_redis_cluster() {
     print_info "部署 Redis Cluster..."
     
+    # 獲取腳本所在目錄
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    
     # 使用 Helm 部署
     helm install redis-cluster bitnami/redis-cluster \
         --namespace redis-cluster \
         --create-namespace \
-        --values values.yaml \
+        --values "${SCRIPT_DIR}/values.yaml" \
         --wait \
         --timeout 15m
     
