@@ -154,6 +154,93 @@ kubectl get pods -n redis-cluster
 kubectl top pods -n redis-cluster
 ```
 
+### 3. Backend Service 後端服務
+
+**部署狀態：** ✅ 已部署並運行  
+**部署時間：** 2025-08-24  
+**版本：** v1.0.0 (nginx placeholder)  
+**副本數：** 2 個 Pod
+
+**服務配置：**
+```
+鏡像: nginx:1.21-alpine (臨時佔位符)
+副本數: 2
+資源配置: CPU 100m-500m, 記憶體 128Mi-512Mi
+重啟策略: Always
+```
+
+**連接資訊：**
+```
+# 內部連接 (集群內部)
+服務名稱: backend-service.backend-service.svc.cluster.local
+端口: 8080
+健康檢查: http://backend-service.backend-service.svc.cluster.local:8080/health
+
+# 外部連接 (NodePort)
+主機: 172.237.27.51
+端口: 30080
+健康檢查: http://172.237.27.51:30080/health
+```
+
+**環境變數配置：**
+```bash
+# PostgreSQL 連接
+POSTGRES_HOST=postgresql.postgresql.svc.cluster.local
+POSTGRES_PORT=5432
+POSTGRES_DATABASE=postgres
+POSTGRES_USERNAME=postgres
+POSTGRES_PASSWORD=postgres123
+
+# Redis Cluster 連接
+REDIS_CLUSTER_HOSTS=redis-cluster.redis-cluster.svc.cluster.local:6379
+REDIS_CLUSTER_MODE=cluster
+REDIS_PASSWORD=7vOXkhBGfT
+
+# 應用配置
+APP_ENV=development
+APP_PORT=8080
+LOG_LEVEL=info
+```
+
+**部署配置：**
+- 命名空間: backend-service
+- 服務類型: NodePort (30080)
+- ConfigMap: backend-service-config
+- Secret: backend-service-secret
+
+**管理腳本：**
+```bash
+# 測試服務
+./k8s/backend-service/test-service.sh
+
+# 重新部署
+./k8s/backend-service/deploy.sh
+
+# 卸載
+./k8s/backend-service/uninstall.sh
+```
+
+**常用操作：**
+```bash
+# 查看 Pod 狀態
+kubectl get pods -n backend-service
+
+# 查看服務狀態
+kubectl get svc -n backend-service
+
+# 查看環境變數
+kubectl exec -n backend-service deployment/backend-service -- env | grep -E '(POSTGRES|REDIS|APP)'
+
+# 查看日誌
+kubectl logs -n backend-service deployment/backend-service
+
+# 測試外部訪問
+curl http://172.237.27.51:30080/
+
+# 進入容器
+kubectl exec -n backend-service -it deployment/backend-service -- /bin/sh
+```
+
 ---
 
 ## 部署歷史
@@ -162,6 +249,7 @@ kubectl top pods -n redis-cluster
 |------|------|----------|------|------|
 | PostgreSQL | 17.5 | 2025-08-24 | ✅ 運行中 | 使用 Longhorn 存儲 |
 | Redis Cluster | 8.0.3 | 2025-08-24 | ✅ 運行中 | 3 主節點，Longhorn 存儲 |
+| Backend Service | v1.0.0 | 2025-08-24 | ✅ 運行中 | nginx 佔位符，2 副本 |
 | NATS Cluster | - | 之前 | ✅ 運行中 | 消息中間件 |
 
 ## 註意事項
@@ -170,13 +258,19 @@ kubectl top pods -n redis-cluster
 2. **網路訪問：** 
    - PostgreSQL NodePort: 30432
    - Redis Cluster NodePort: 30379
+   - Backend Service NodePort: 30080
    - 確保防火牆允許這些端口
 3. **備份策略：** 
    - PostgreSQL：建議定期備份數據庫
    - Redis Cluster：考慮使用 AOF/RDB 持久化配置
 4. **監控：** 定期檢查資源使用情況和日誌
 5. **Redis Cluster 集群模式：** 應用程式需要使用支持集群模式的 Redis 客戶端
-6. **密碼管理：** Redis 密碼存儲在 Kubernetes Secret 中，定期輪換密碼
+6. **密碼管理：** Redis 和 PostgreSQL 密碼存儲在 Kubernetes Secret 中，定期輪換密碼
+7. **Backend Service：** 
+   - 目前使用 nginx 作為佔位符鏡像
+   - 環境變數已預配置好 PostgreSQL 和 Redis 連接
+   - 需要替換為實際的應用程式鏡像
+8. **服務依賴：** Backend Service 依賴 PostgreSQL 和 Redis Cluster，確保這些服務先啟動
 
 ## 故障排除
 
@@ -226,6 +320,43 @@ kubectl top pods -n redis-cluster
    kubectl get pods -n redis-cluster
    kubectl get svc -n redis-cluster
    kubectl describe svc -n redis-cluster redis-cluster
+   ```
+
+**Backend Service 常見問題：**
+
+1. **服務無法啟動**
+   ```bash
+   kubectl describe pod -n backend-service
+   kubectl logs -n backend-service deployment/backend-service
+   ```
+
+2. **環境變數配置問題**
+   ```bash
+   # 檢查 ConfigMap 和 Secret
+   kubectl get configmap -n backend-service backend-service-config -o yaml
+   kubectl get secret -n backend-service backend-service-secret -o yaml
+   
+   # 檢查容器內環境變數
+   kubectl exec -n backend-service deployment/backend-service -- env | grep -E '(POSTGRES|REDIS|APP)'
+   ```
+
+3. **服務連接問題**
+   ```bash
+   # 測試外部連接
+   curl -v http://172.237.27.51:30080/
+   
+   # 檢查服務端點
+   kubectl get endpoints -n backend-service
+   kubectl describe svc -n backend-service backend-service
+   ```
+
+4. **依賴服務連接問題**
+   ```bash
+   # 從容器內測試 PostgreSQL 連接
+   kubectl exec -n backend-service deployment/backend-service -- nslookup postgresql.postgresql.svc.cluster.local
+   
+   # 從容器內測試 Redis Cluster 連接
+   kubectl exec -n backend-service deployment/backend-service -- nslookup redis-cluster.redis-cluster.svc.cluster.local
    ```
 
 ---

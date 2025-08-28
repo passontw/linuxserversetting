@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: backend-service
+  labels:
+    name: backend-service
+    app: backend-service

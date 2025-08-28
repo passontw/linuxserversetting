@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-service-config
+  namespace: backend-service
+data:
+  # 應用配置
+  APP_ENV: "development"
+  APP_PORT: "8080"
+  LOG_LEVEL: "info"
+  
+  # PostgreSQL 連接配置 (內部服務)
+  POSTGRES_HOST: "postgresql.postgresql.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  POSTGRES_DATABASE: "postgres"
+  POSTGRES_USERNAME: "postgres"
+  POSTGRES_SSL_MODE: "disable"
+  
+  # Redis Cluster 連接配置 (內部服務)
+  REDIS_CLUSTER_HOSTS: "redis-cluster.redis-cluster.svc.cluster.local:6379"
+  REDIS_CLUSTER_MODE: "cluster"
+  
+  # 健康檢查配置
+  HEALTH_CHECK_PATH: "/health"
+  METRICS_PATH: "/metrics"
